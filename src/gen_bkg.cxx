@@ -22,19 +22,20 @@ using namespace PythiaAngyntyrStudy;
 
 int main (int argc, char** argv) {
 
-  if (argc < 7) {
-    std::cout << " usage: gen BEAMA BEAMB SEED SQRTS NEVT BOOST FILENAMEOUT" << std::endl;
+  if (argc < 8) {
+    std::cout << " usage: gen SEED SEEDOFFSET BEAMA BEAMB SQRTS MINPTHAT NEVT BOOST FILENAMEOUT" << std::endl;
     return 0;
   }
 
   // get arguments
-  const int seed = atoi (argv[1]);
-  const int beamA = atoi (argv[2]);
-  const int beamB = atoi (argv[3]);
-  const float sqrts = atof (argv[4]);
-  const int nEvents = atoi (argv[5]);
-  const float boost = atof (argv[6]);
-  const string outFileName = string (argv[7]);
+  const int seed = atoi (argv[1]) + atoi (argv[2]);
+  const int beamA = atoi (argv[3]);
+  const int beamB = atoi (argv[4]);
+  const float sqrts = atof (argv[5]);
+  const float ptHatMin = atof (argv[6]);
+  const int nEvents = atoi (argv[7]);
+  const float boost = atof (argv[8]);
+  const string outFileName = string (argv[9]);
 
   // Generator. Process selection. LHC initialization. Histogram.
   Pythia pythia;

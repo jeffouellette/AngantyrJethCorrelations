@@ -76,10 +76,6 @@ int main () {
   h_trk_dphi_pt_gt2_yield_pp_bkg = (TH1D*) inFile->Get ("h_trk_dphi_pt_gt2_yield_pp_bkg")->Clone ("h_trk_dphi_pt_gt2_pp_bkg");
   h_trk_dphi_pt_lt2_yield_pp_bkg = (TH1D*) inFile->Get ("h_trk_dphi_pt_lt2_yield_pp_bkg")->Clone ("h_trk_dphi_pt_lt2_pp_bkg");
 
-  h_jet_pt_yield_pp_bkg = (TH1D*) inFile->Get ("h_jet_pt_yield_pp_bkg")->Clone ("h_jet_pt_pp_bkg");
-
-  h_jet_yield_pp_bkg = (TH1D*) inFile->Get ("h_jet_yield_pp_bkg")->Clone ("h_jet_pp_bkg");
-
 
   inFile = new TFile ("rootFiles/pPb/hists.root", "read");
 
@@ -102,9 +98,6 @@ int main () {
   h_trk_dphi_pt_gt2_yield_pPb_bkg = (TH1D*) inFile->Get ("h_trk_dphi_pt_gt2_yield_pPb_bkg")->Clone ("h_trk_dphi_pt_gt2_pPb_bkg");
   h_trk_dphi_pt_lt2_yield_pPb_bkg = (TH1D*) inFile->Get ("h_trk_dphi_pt_lt2_yield_pPb_bkg")->Clone ("h_trk_dphi_pt_lt2_pPb_bkg");
 
-  h_jet_pt_yield_pPb_bkg = (TH1D*) inFile->Get ("h_jet_pt_yield_pPb_bkg")->Clone ("h_jet_pt_pPb_bkg");
-
-  h_jet_yield_pPb_bkg = (TH1D*) inFile->Get ("h_jet_yield_pPb_bkg")->Clone ("h_jet_pPb_bkg");
 
 
   h_trk_pt_ns_yield_pPb_sig = (TH1D*) h_trk_pt_ns_yield_pPb->Clone ("h_trk_pt_ns_yield_pPb_sig");

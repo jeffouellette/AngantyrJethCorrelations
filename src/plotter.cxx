@@ -70,7 +70,7 @@ int main () {
   TFile* inFile = nullptr;
 
 
-  inFile = new TFile ("rootFiles/pp/hists.root", "read");
+  inFile = new TFile ("rootFiles/finalHists.root", "read");
 
   h_trk_pt_ns_yield_pp = (TH1D*) inFile->Get ("h_trk_pt_ns_yield_pp")->Clone ("h_trk_pt_ns_pp");
   h_trk_pt_as_yield_pp = (TH1D*) inFile->Get ("h_trk_pt_as_yield_pp")->Clone ("h_trk_pt_as_pp");
@@ -81,8 +81,6 @@ int main () {
   h_jet_pt_yield_pp = (TH1D*) inFile->Get ("h_jet_pt_yield_pp")->Clone ("h_jet_pt_pp");
 
   h_jet_yield_pp = (TH1D*) inFile->Get ("h_jet_yield_pp")->Clone ("h_jet_pp");
-
-  inFile = new TFile ("rootFiles/pPb/hists.root", "read");
 
   h_trk_pt_ns_yield_pPb = (TH1D*) inFile->Get ("h_trk_pt_ns_yield_pPb")->Clone ("h_trk_pt_ns_pPb");
   h_trk_pt_as_yield_pPb = (TH1D*) inFile->Get ("h_trk_pt_as_yield_pPb")->Clone ("h_trk_pt_as_pPb");

@@ -1,0 +1,39 @@
+Universe = vanilla
+Notification = Complete
+Priority = +1
+GetEnv = True
+InitialDir = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations
+accounting_group = group_atlas.boulder
+
+
+
+Executable = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations/bin/gen
+
+Arguments = $(Process) 0 2212 2212 5020 50 20000 0 rootFiles/pp/gen_job$(Process).root
+Log = logs/pp_gen_job$(Process).log
+Output = outputs/pp_gen_job$(Process).out
+Error = errors/pp_gen_job$(Process).err
+Queue 50
+
+
+Arguments = $(Process) 1000 2212 1000822080 5020 50 20000 -0.465 rootFiles/pPb/gen_job$(Process).root
+Log = logs/pPb_gen_job$(Process).log
+Output = outputs/pPb_gen_job$(Process).out
+Error = errors/pPb_gen_job$(Process).err
+Queue 50
+
+
+Executable = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations/bin/gen_bkg
+
+Arguments = $(Process) 2000 2212 2212 5020 50 20000 0 rootFiles/pp/gen_bkg_job$(Process).root
+Log = logs/pp_gen_bkg_job$(Process).log
+Output = outputs/pp_gen_bkg_job$(Process).out
+Error = errors/pp_gen_bkg_job$(Process).err
+Queue 50
+
+
+Arguments = $(Process) 3000 2212 1000822080 5020 50 20000 -0.465 rootFiles/pPb/gen_bkg_job$(Process).root
+Log = logs/pPb_gen_bkg_job$(Process).log
+Output = outputs/pPb_gen_bkg_job$(Process).out
+Error = errors/pPb_gen_bkg_job$(Process).err
+Queue 50

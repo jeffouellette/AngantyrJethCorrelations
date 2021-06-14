@@ -1,2 +1,2 @@
-# PythiaBoostStudy
-Pythia config and plotting macros for studying the impact of a collision system boost on the acceptance of charged hadrons (intended for use with p+Pb data at the LHC)
+# Angantyr Jet-H correlations
+Pythia config for modeling jet-hadron correlations in small systems (p+Pb) at the LHC. (Default job config includes proper boost/acceptance for ATLAS).

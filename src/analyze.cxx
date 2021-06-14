@@ -2,7 +2,7 @@
 #define __analyze_cxx__
 
 #include <TFile.h>
-#include <TTree.h>
+#include <TChain.h>
 #include <TH1D.h>
 #include <TH2D.h>
 #include <TF1.h>
@@ -73,22 +73,24 @@ double GetMaxRapidity (const double mass, const double pT) {
 int main (int argc, char** argv) {
 
   if (argc < 4) {
-    std::cout << " usage: analyze NAME INFILENAME OUTFILENAME" << std::endl;
+    std::cout << " usage: analyze NAME INFILEPATTERN OUTFILENAME" << std::endl;
     return 0;
   }
 
   const string name = std::string (argv[1]);
-  const string inFileName = std::string (argv[2]);
+  const string inFilePattern = std::string (argv[2]);
   const string outFileName = std::string (argv[3]);
 
   const float boost = (name.find ("pPb") != std::string::npos ? 0.465 : 0);
 
   std::cout << "boost = " << boost << std::endl;
 
-  TFile* inFile = nullptr;
-  TTree* inTree = nullptr;
+  std::cout << "InFilePattern = " << inFilePattern << std::endl;
 
-  int code = 0;
+  TChain* inTree = new TChain ("tree", "tree");
+  inTree->Add (inFilePattern.c_str ());
+
+  std::cout << "Added " << inTree->GetListOfFiles ()->GetEntries () << " files to TChain, with " << inTree->GetEntries () << " events" << std::endl;
 
   int akt2_jet_n = 0;
   float akt2_jet_pt[100];
@@ -112,15 +114,12 @@ int main (int argc, char** argv) {
   float part_e[10000];
   float part_m[10000];
 
-  inFile = new TFile (inFileName.c_str (), "read");
-  inTree = (TTree*) inFile->Get ("tree");
-
   const int nEvents = inTree->GetEntries ();
   double sumWgtsEvents = 0, sumWgtsSqEvents = 0;
   int nJetEvents = 0;
   double sumWgtsJetEvents = 0, sumWgtsSqJetEvents = 0;
 
-  inTree->SetBranchAddress ("code",       &code);
+  //inTree->SetBranchAddress ("code",       &code);
   //inTree->SetBranchAddress ("id1",        &id1);
   //inTree->SetBranchAddress ("id2",        &id2);
   //inTree->SetBranchAddress ("x1pdf",      &x1pdf);
@@ -353,10 +352,6 @@ int main (int argc, char** argv) {
     }
 
   } // end loop over iEvent
-
-
-  inFile->Close ();
-  SaferDelete (&inFile);
 
 
 
