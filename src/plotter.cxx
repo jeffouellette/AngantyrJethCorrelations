@@ -213,11 +213,11 @@ int main () {
     myDraw (h, myPurple, kFullCircle, 0.8);
     SaferDelete (&h);
 
-    myText (0.220, 0.290, kBlack, "#bf{Pythia 8.303} Angantyr, #sqrt{s} = 5.02 TeV", 0.028/0.7);
-    myText (0.220, 0.230, kBlack, "#it{p}_{T}^{jet} > 60 GeV, #it{p}_{T}^{ch} > 2 GeV", 0.028/0.7);
+    myText (0.220, 0.880, kBlack, "#bf{Pythia 8.303} Angantyr, #sqrt{s} = 5.02 TeV", 0.028/0.7);
+    myText (0.220, 0.820, kBlack, "#it{p}_{T}^{jet} > 60 GeV, #it{p}_{T}^{ch} > 2 GeV", 0.028/0.7);
 
-    myLineText2 (0.270, 0.170, myPurple, kFullCircle, "#it{pp} total", 1.0, 0.028/0.7, true);
-    myLineText2 (0.270, 0.110, myOrange, kFullCircle, "#it{p}+Pb total", 1.0, 0.028/0.7, true);
+    myLineText2 (0.270, 0.760, myPurple, kFullCircle, "#it{pp} total", 1.0, 0.028/0.7, true);
+    myLineText2 (0.270, 0.700, myOrange, kFullCircle, "#it{p}+Pb total", 1.0, 0.028/0.7, true);
     
 
     dPad->cd (); 

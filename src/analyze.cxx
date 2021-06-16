@@ -57,11 +57,11 @@ int main (int argc, char** argv) {
   //float akt2_jet_m[100];
 
   int akt4_jet_n = 0;
-  float akt4_jet_pt[100];
-  float akt4_jet_eta[100];
-  float akt4_jet_phi[100];
-  float akt4_jet_e[100];
-  float akt4_jet_m[100];
+  float akt4_jet_pt[1000];
+  float akt4_jet_eta[1000];
+  float akt4_jet_phi[1000];
+  float akt4_jet_e[1000];
+  float akt4_jet_m[1000];
 
   int part_n = 0;
   float part_pt[10000];
@@ -73,7 +73,7 @@ int main (int argc, char** argv) {
 
   const int nEvents = inTree->GetEntries ();
   double sumWgtsEvents = 0, sumWgtsSqEvents = 0;
-  int nJetEvents = 0;
+  double nJetEvents = 0;
   double sumWgtsJetEvents = 0, sumWgtsSqJetEvents = 0;
 
   //inTree->SetBranchAddress ("code",       &code);
@@ -108,26 +108,26 @@ int main (int argc, char** argv) {
   inTree->SetBranchAddress ("part_m",     &part_m);
 
 
-  TH1D* h_trk_pt_ns_yield;
-  TH2D* h2_trk_pt_ns_cov;
-  TH1D* h_trk_pt_as_yield;
-  TH2D* h2_trk_pt_as_cov;
+  TH1D* h_trk_pt_ns_yield = nullptr;
+  TH2D* h2_trk_pt_ns_cov = nullptr;
+  TH1D* h_trk_pt_as_yield = nullptr;
+  TH2D* h2_trk_pt_as_cov = nullptr;
 
-  TH1D* h_trk_dphi_pt_gt2_yield;
-  TH2D* h2_trk_dphi_pt_gt2_cov;
-  TH1D* h_trk_dphi_pt_lt2_yield;
-  TH2D* h2_trk_dphi_pt_lt2_cov;
+  TH1D* h_trk_dphi_pt_gt2_yield = nullptr;
+  TH2D* h2_trk_dphi_pt_gt2_cov = nullptr;
+  TH1D* h_trk_dphi_pt_lt2_yield = nullptr;
+  TH2D* h2_trk_dphi_pt_lt2_cov = nullptr;
 
-  TH1D* h_jet_pt_yield;
-  TH2D* h2_jet_pt_cov;
+  TH1D* h_jet_pt_yield = nullptr;
+  TH2D* h2_jet_pt_cov = nullptr;
 
-  TH1D* h_jet_yield;
+  TH1D* h_jet_yield = nullptr;
 
-  double trk_pt_ns_counts[nPthBins] = {};
-  double trk_pt_as_counts[nPthBins] = {};
-  double trk_dphi_pt_gt2_counts[nDPhiBins] = {};
-  double trk_dphi_pt_lt2_counts[nDPhiBins] = {};
-  double jet_ptj_counts[nPtJBins] = {};
+  double* trk_pt_ns_counts = new double[nPthBins];
+  double* trk_pt_as_counts = new double[nPthBins];
+  double* trk_dphi_pt_gt2_counts = new double[nDPhiBins];
+  double* trk_dphi_pt_lt2_counts = new double[nDPhiBins];
+  double* jet_ptj_counts = new double[nPtJBins];
 
   for (int i = 0; i < nPthBins; i++) {
     trk_pt_ns_counts[i] = 0;
@@ -136,6 +136,9 @@ int main (int argc, char** argv) {
   for (int i = 0; i < nDPhiBins; i++) {
     trk_dphi_pt_gt2_counts[i] = 0;
     trk_dphi_pt_lt2_counts[i] = 0;
+  }
+  for (int i = 0; i < nPtJBins; i++) {
+    jet_ptj_counts[i] = 0;
   }
 
 
@@ -187,7 +190,7 @@ int main (int argc, char** argv) {
       const float jeta = akt4_jet_eta[iJ];
       const float jphi = akt4_jet_phi[iJ];
 
-      if (fabs (jeta) > 2.8)
+      if (std::fabs (jeta) > 2.8)
         continue;
 
       for (short i = 0; i < nPtJBins; i++) {
@@ -202,7 +205,7 @@ int main (int argc, char** argv) {
 
       jetCount++;
 
-      double jwgt = 1;
+      double jwgt = 1.;
       //if (boost == 0.465 && jeta > 1.1 && jeta < 3.6) {
       //  if (InDisabledHEC (jeta, jphi, jetr)) continue;
       //  else jwgt = 2.*M_PI / (3.*M_PI/2. - 2*jetr);
@@ -215,7 +218,7 @@ int main (int argc, char** argv) {
         const float trk_eta = part_eta[iPart];
         const float dphi = DeltaPhi (part_phi[iPart], jphi);
 
-        if (fabs (part_eta[iPart]) > 2.5)
+        if (std::fabs (part_eta[iPart]) > 2.5)
           continue;
 
         if (std::fabs (trk_eta - boost) > 2.5-0.465)
@@ -314,10 +317,6 @@ int main (int argc, char** argv) {
 
 
 
-  // convert all counts to doubles (to avoid integer division issues... yay)
-  const double fnEvents = (double) nEvents;
-  const double fnJetEvents = (double) nJetEvents;
-
   std::cout << "nJetEvents =         " << nJetEvents << std::endl;
   std::cout << "sumWgtsJetEvents =   " << sumWgtsJetEvents << std::endl;
   std::cout << "sumWgtsSqJetEvents = " << sumWgtsSqJetEvents << std::endl;
@@ -382,6 +381,17 @@ int main (int argc, char** argv) {
     SetVariances (h, h2);
 
   }
+
+  delete[] trk_pt_ns_counts;
+  trk_pt_ns_counts = nullptr;
+  delete[] trk_pt_as_counts;
+  trk_pt_as_counts = nullptr;
+  delete[] trk_dphi_pt_gt2_counts;
+  trk_dphi_pt_gt2_counts = nullptr;
+  delete[] trk_dphi_pt_lt2_counts;
+  trk_dphi_pt_lt2_counts = nullptr;
+  delete[] jet_ptj_counts;
+  jet_ptj_counts = nullptr;
 
   outFile->cd ();
 

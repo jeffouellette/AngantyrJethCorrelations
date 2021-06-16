@@ -70,11 +70,11 @@ int main (int argc, char** argv) {
   //float akt2_jet_m[100];
 
   int akt4_jet_n = 0;
-  float akt4_jet_pt[100];
-  float akt4_jet_eta[100];
-  float akt4_jet_phi[100];
-  float akt4_jet_e[100];
-  float akt4_jet_m[100];
+  float akt4_jet_pt[1000];
+  float akt4_jet_eta[1000];
+  float akt4_jet_phi[1000];
+  float akt4_jet_e[1000];
+  float akt4_jet_m[1000];
 
   int part_n = 0;
   float part_pt[10000];
@@ -94,7 +94,7 @@ int main (int argc, char** argv) {
   const int nMix = mixTree->GetEntries ();
   double sumWgtsEvents = 0, sumWgtsSqEvents = 0;
 
-  int nJetEvents = 0;
+  double nJetEvents = 0;
   double sumWgtsJetEvents = 0, sumWgtsSqJetEvents = 0;
 
   //tagTree->SetBranchAddress ("code",       &code);
@@ -146,10 +146,19 @@ int main (int argc, char** argv) {
   TH1D* h_trk_dphi_pt_lt2_yield;
   TH2D* h2_trk_dphi_pt_lt2_cov;
 
-  double trk_pt_ns_counts[nPthBins] = {};
-  double trk_pt_as_counts[nPthBins] = {};
-  double trk_dphi_pt_gt2_counts[nDPhiBins] = {};
-  double trk_dphi_pt_lt2_counts[nDPhiBins] = {};
+  double* trk_pt_ns_counts = new double[nPthBins];
+  double* trk_pt_as_counts = new double[nPthBins];
+  double* trk_dphi_pt_gt2_counts = new double[nDPhiBins];
+  double* trk_dphi_pt_lt2_counts = new double[nDPhiBins];
+
+  for (int i = 0; i < nPthBins; i++) {
+    trk_pt_ns_counts[i] = 0;
+    trk_pt_as_counts[i] = 0;
+  }
+  for (int i = 0; i < nDPhiBins; i++) {
+    trk_dphi_pt_gt2_counts[i] = 0;
+    trk_dphi_pt_lt2_counts[i] = 0;
+  }
 
 
   TFile* outFile = new TFile (outFileName.c_str (), "recreate");
@@ -314,10 +323,6 @@ int main (int argc, char** argv) {
 
 
 
-  // convert all counts to doubles (to avoid integer division issues... yay)
-  const double fnEvents = (double) nEvents;
-  const double fnJetEvents = (double) nJetEvents;
-
   std::cout << "nJetEvents =         " << nJetEvents << std::endl;
   std::cout << "sumWgtsJetEvents =   " << sumWgtsJetEvents << std::endl;
   std::cout << "sumWgtsSqJetEvents = " << sumWgtsSqJetEvents << std::endl;
@@ -370,6 +375,15 @@ int main (int argc, char** argv) {
     SetVariances (h, h2);
 
   }
+
+  delete[] trk_pt_ns_counts;
+  trk_pt_ns_counts = nullptr;
+  delete[] trk_pt_as_counts;
+  trk_pt_as_counts = nullptr;
+  delete[] trk_dphi_pt_gt2_counts;
+  trk_dphi_pt_gt2_counts = nullptr;
+  delete[] trk_dphi_pt_lt2_counts;
+  trk_dphi_pt_lt2_counts = nullptr;
 
   outFile->cd ();
 
