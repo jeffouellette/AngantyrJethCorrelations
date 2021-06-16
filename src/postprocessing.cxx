@@ -8,51 +8,52 @@
 
 #include "header.h"
 
-using namespace PythiaAngyntyrStudy;
+using namespace PythiaAngantyrStudy;
 
 typedef TGraphAsymmErrors TGAE;
 
-TH1D* h_trk_pt_ns_yield_pPb;
-TH1D* h_trk_pt_ns_yield_pPb_bkg;
-TH1D* h_trk_pt_ns_yield_pPb_sig;
-TH1D* h_trk_pt_ns_yield_pp;
-TH1D* h_trk_pt_ns_yield_pp_bkg;
-TH1D* h_trk_pt_ns_yield_pp_sig;
-TH1D* h_trk_pt_ns_yield_ratio; // ratio of track yield in a jet / all tracks
-TH1D* h_trk_pt_as_yield_pPb;
-TH1D* h_trk_pt_as_yield_pPb_bkg;
-TH1D* h_trk_pt_as_yield_pPb_sig;
-TH1D* h_trk_pt_as_yield_pp;
-TH1D* h_trk_pt_as_yield_pp_bkg;
-TH1D* h_trk_pt_as_yield_pp_sig;
-TH1D* h_trk_pt_as_yield_ratio; // ratio of track yield in a jet / all tracks
+TH1D* h_trk_pt_ns_yield_pPb = nullptr;
+TH1D* h_trk_pt_ns_yield_pPb_bkg = nullptr;
+TH1D* h_trk_pt_ns_yield_pPb_sig = nullptr;
+TH1D* h_trk_pt_ns_yield_pp = nullptr;
+TH1D* h_trk_pt_ns_yield_pp_bkg = nullptr;
+TH1D* h_trk_pt_ns_yield_pp_sig = nullptr;
+TH1D* h_trk_pt_ns_yield_ratio = nullptr; // ratio of track yield in a jet / all tracks
+TH1D* h_trk_pt_as_yield_pPb = nullptr;
+TH1D* h_trk_pt_as_yield_pPb_bkg = nullptr;
+TH1D* h_trk_pt_as_yield_pPb_sig = nullptr;
+TH1D* h_trk_pt_as_yield_pp = nullptr;
+TH1D* h_trk_pt_as_yield_pp_bkg = nullptr;
+TH1D* h_trk_pt_as_yield_pp_sig = nullptr;
+TH1D* h_trk_pt_as_yield_ratio = nullptr; // ratio of track yield in a jet / all tracks
 
-TH1D* h_trk_dphi_pt_gt2_yield_pPb;
-TH1D* h_trk_dphi_pt_gt2_yield_pPb_bkg;
-TH1D* h_trk_dphi_pt_gt2_yield_pPb_sig;
-TH1D* h_trk_dphi_pt_gt2_yield_pp;
-TH1D* h_trk_dphi_pt_gt2_yield_pp_bkg;
-TH1D* h_trk_dphi_pt_gt2_yield_pp_sig;
-TH1D* h_trk_dphi_pt_gt2_yield_ratio;
-TH1D* h_trk_dphi_pt_lt2_yield_pPb;
-TH1D* h_trk_dphi_pt_lt2_yield_pPb_bkg;
-TH1D* h_trk_dphi_pt_lt2_yield_pPb_sig;
-TH1D* h_trk_dphi_pt_lt2_yield_pp;
-TH1D* h_trk_dphi_pt_lt2_yield_pp_bkg;
-TH1D* h_trk_dphi_pt_lt2_yield_pp_sig;
-TH1D* h_trk_dphi_pt_lt2_yield_ratio; 
+TH1D* h_trk_dphi_pt_gt2_yield_pPb = nullptr;
+TH1D* h_trk_dphi_pt_gt2_yield_pPb_bkg = nullptr;
+TH1D* h_trk_dphi_pt_gt2_yield_pPb_sig = nullptr;
+TH1D* h_trk_dphi_pt_gt2_yield_pp = nullptr;
+TH1D* h_trk_dphi_pt_gt2_yield_pp_bkg = nullptr;
+TH1D* h_trk_dphi_pt_gt2_yield_pp_sig = nullptr;
+TH1D* h_trk_dphi_pt_gt2_yield_ratio = nullptr;
+TH1D* h_trk_dphi_pt_lt2_yield_pPb = nullptr;
+TH1D* h_trk_dphi_pt_lt2_yield_pPb_bkg = nullptr;
+TH1D* h_trk_dphi_pt_lt2_yield_pPb_sig = nullptr;
+TH1D* h_trk_dphi_pt_lt2_yield_pp = nullptr;
+TH1D* h_trk_dphi_pt_lt2_yield_pp_bkg = nullptr;
+TH1D* h_trk_dphi_pt_lt2_yield_pp_sig = nullptr;
+TH1D* h_trk_dphi_pt_lt2_yield_ratio = nullptr;
 
-TH1D* h_jet_pt_yield_pPb;
-TH1D* h_jet_pt_yield_pp;
-TH1D* h_jet_pt_yield_ratio;
+TH1D* h_jet_pt_yield_pPb = nullptr;
+TH1D* h_jet_pt_yield_pp = nullptr;
+TH1D* h_jet_pt_yield_ratio = nullptr;
 
-TH1D* h_jet_yield_pPb;
-TH1D* h_jet_yield_pp;
+TH1D* h_jet_yield_pp = nullptr;
+TH1D* h_jet_yield_pPb = nullptr;
 
 
 int main () {
 
   TFile* inFile = nullptr;
+  TFile* outFile = new TFile ("rootFiles/finalHists.root", "recreate");
 
 
   inFile = new TFile ("rootFiles/pp/hists.root", "read");
@@ -65,7 +66,7 @@ int main () {
 
   h_jet_pt_yield_pp = (TH1D*) inFile->Get ("h_jet_pt_yield_pp")->Clone ("h_jet_pt_pp");
 
-  h_jet_yield_pp = (TH1D*) inFile->Get ("h_jet_yield_pp")->Clone ("h_jet_pp");
+  h_jet_yield_pp = (TH1D*) inFile->Get ("h_jet_yield_pp");
 
 
   inFile = new TFile ("rootFiles/pp/hists_bkg.root", "read");
@@ -87,7 +88,7 @@ int main () {
 
   h_jet_pt_yield_pPb = (TH1D*) inFile->Get ("h_jet_pt_yield_pPb")->Clone ("h_jet_pt_pPb");
 
-  h_jet_yield_pPb = (TH1D*) inFile->Get ("h_jet_yield_pPb")->Clone ("h_jet_pPb");
+  h_jet_yield_pPb = (TH1D*) inFile->Get ("h_jet_yield_pPb");
 
 
   inFile = new TFile ("rootFiles/pPb/hists_bkg.root", "read");
@@ -97,6 +98,9 @@ int main () {
 
   h_trk_dphi_pt_gt2_yield_pPb_bkg = (TH1D*) inFile->Get ("h_trk_dphi_pt_gt2_yield_pPb_bkg")->Clone ("h_trk_dphi_pt_gt2_pPb_bkg");
   h_trk_dphi_pt_lt2_yield_pPb_bkg = (TH1D*) inFile->Get ("h_trk_dphi_pt_lt2_yield_pPb_bkg")->Clone ("h_trk_dphi_pt_lt2_pPb_bkg");
+
+
+  outFile->cd ();
 
 
 
@@ -133,8 +137,6 @@ int main () {
   h_jet_pt_yield_ratio = (TH1D*) h_jet_pt_yield_pPb->Clone ("h_jet_pt_ratio");
   h_jet_pt_yield_ratio->Divide (h_jet_pt_yield_pp);
 
-
-  TFile* outFile = new TFile ("rootFiles/finalHists.root", "recreate");
 
   h_trk_pt_ns_yield_pPb->Write ();
   h_trk_pt_ns_yield_pPb_bkg->Write ();

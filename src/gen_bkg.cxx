@@ -17,7 +17,7 @@
 #include "header.h"
 
 using namespace Pythia8;
-using namespace PythiaAngyntyrStudy;
+using namespace PythiaAngantyrStudy;
 
 
 int main (int argc, char** argv) {
@@ -52,8 +52,8 @@ int main (int argc, char** argv) {
   pythia.readString (Form ("Beams:eA = %g", eA));
   pythia.readString (Form ("Beams:eB = %g", eB));
   pythia.readString("SoftQCD:nonDiffractive = on");                              
-  pythia.readString("SoftQCD:singleDiffractive = on");                           
-  pythia.readString("SoftQCD:doubleDiffractive = on");  
+  //pythia.readString("SoftQCD:singleDiffractive = on");                           
+  //pythia.readString("SoftQCD:doubleDiffractive = on");  
 
   pythia.init ();
 
@@ -160,15 +160,20 @@ int main (int argc, char** argv) {
         particles.push_back (fastjet::PseudoJet (pythia.event[i].px (), pythia.event[i].py (), pythia.event[i].pz (), pythia.event[i].e ()));
 
       if (-4.9 < pythia.event[i].eta () && pythia.event[i].eta () < -3.2)
-        fcal_et_negEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2));
+        fcal_et_negEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2)); // add particle E_T
       else if (3.2 < pythia.event[i].eta () && pythia.event[i].eta () < 4.9)
-        fcal_et_posEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2));
+        fcal_et_posEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2)); // add particle E_T
 
       if (!(pythia.event[i].isCharged ()))
         continue; // check that particle is charged (is not neutral)
 
       if (!(pythia.event[i].isHadron ()))
         continue; // check that particle is a hadron
+
+      if (b_part_n >= 10000) {
+        std::cout << "Ran out of array space! Skipping a very important particle!" << std::endl;
+        continue;
+      }
 
       b_part_pt[b_part_n]   = pythia.event[i].pT ();
       b_part_eta[b_part_n]  = pythia.event[i].eta ();

@@ -6,7 +6,7 @@ reqdirs= bin outputs logs errors Plots
 
 .PHONY: directories all clean
 
-all: directories gen gen_bkg analyze postprocessing plotter
+all: directories gen gen_bkg analyze postprocessing plotter mixevent centrality gen_cent_classes
 
 directories:
 	mkdir -p ${reqdirs}
@@ -17,8 +17,17 @@ gen: src/gen.cxx
 gen_bkg: src/gen_bkg.cxx
 	$(CXX) $< $(CXXFLAGS) $(LDFLAGS) $(PYTHIA8_DIR)/lib/libpythia8.a -o bin/gen_bkg
 
+centrality: src/centrality.cxx
+	$(CXX) $< $(CXXFLAGS) $(LDFLAGS) -o bin/centrality
+
 analyze: src/analyze.cxx
 	$(CXX) $< $(CXXFLAGS) $(LDFLAGS) -o bin/analyze
+
+mixevent: src/mixevent.cxx
+	$(CXX) $< $(CXXFLAGS) $(LDFLAGS) -o bin/mixevent
+
+gen_cent_classes: src/gen_cent_classes.cxx
+	$(CXX) $< $(CXXFLAGS) $(LDFLAGS) -o bin/gen_cent_classes
 
 postprocessing: src/postprocessing.cxx
 	$(CXX) $< $(CXXFLAGS) $(LDFLAGS) -o bin/postprocessing

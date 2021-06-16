@@ -1,5 +1,5 @@
-#ifndef __analyze_cxx__
-#define __analyze_cxx__
+#ifndef __mixevent_cxx__
+#define __mixevent_cxx__
 
 #include <TFile.h>
 #include <TChain.h>
@@ -30,24 +30,37 @@ using namespace PythiaAngantyrStudy;
 int main (int argc, char** argv) {
 
   if (argc < 4) {
-    std::cout << " usage: analyze NAME INFILEPATTERN OUTFILENAME" << std::endl;
+    std::cout << " usage: mixevent NAME TAGFILEPATTERN MIXFILEPATTERN OUTFILENAME" << std::endl;
     return 0;
   }
 
   const string name = std::string (argv[1]);
-  const string inFilePattern = std::string (argv[2]);
-  const string outFileName = std::string (argv[3]);
+  const string tagFilePattern = std::string (argv[2]);
+  const string mixFilePattern = std::string (argv[3]);
+  const string outFileName = std::string (argv[4]);
 
-  const float boost = (name.find ("pPb") != std::string::npos ? -0.465 : 0);
+  const bool ispPb = (name.find ("pPb") != std::string::npos);
+
+  std::cout << "ispPb = " << (ispPb ? "true" : "false") << std::endl;
+
+  const float boost = (ispPb ? -0.465 : 0);
 
   std::cout << "boost = " << boost << std::endl;
 
-  std::cout << "InFilePattern = " << inFilePattern << std::endl;
+  std::cout << "TagFilePattern = " << tagFilePattern << std::endl;
+  std::cout << "MixFilePattern = " << mixFilePattern << std::endl;
 
-  TChain* inTree = new TChain ("tree", "tree");
-  inTree->Add (inFilePattern.c_str ());
+  TChain* tagTree = new TChain ("tree", "tree");
+  tagTree->Add (tagFilePattern.c_str ());
 
-  std::cout << "Added " << inTree->GetListOfFiles ()->GetEntries () << " files to TChain, with " << inTree->GetEntries () << " events" << std::endl;
+  std::cout << "Added " << tagTree->GetListOfFiles ()->GetEntries () << " files to tag TChain, with " << tagTree->GetEntries () << " events" << std::endl;
+
+
+  TChain* mixTree = new TChain ("tree", "tree");
+  mixTree->Add (mixFilePattern.c_str ());
+
+  std::cout << "Added " << mixTree->GetListOfFiles ()->GetEntries () << " files to mix TChain, with " << mixTree->GetEntries () << " events" << std::endl;
+
 
   //int akt2_jet_n = 0;
   //float akt2_jet_pt[100];
@@ -71,41 +84,56 @@ int main (int argc, char** argv) {
   float part_e[10000];
   float part_m[10000];
 
-  const int nEvents = inTree->GetEntries ();
+  float fcal_et_negEta_tag = 0;
+  float fcal_et_posEta_tag = 0;
+  float fcal_et_negEta_mix = 0;
+  float fcal_et_posEta_mix = 0;
+
+
+  const int nEvents = tagTree->GetEntries ();
+  const int nMix = mixTree->GetEntries ();
   double sumWgtsEvents = 0, sumWgtsSqEvents = 0;
+
   int nJetEvents = 0;
   double sumWgtsJetEvents = 0, sumWgtsSqJetEvents = 0;
 
-  //inTree->SetBranchAddress ("code",       &code);
-  //inTree->SetBranchAddress ("id1",        &id1);
-  //inTree->SetBranchAddress ("id2",        &id2);
-  //inTree->SetBranchAddress ("x1pdf",      &x1pdf);
-  //inTree->SetBranchAddress ("x2pdf",      &x2pdf);
-  //inTree->SetBranchAddress ("Q",          &Q);
-  //inTree->SetBranchAddress ("isValence1", &isValence1);
-  //inTree->SetBranchAddress ("isValence2", &isValence2);
+  //tagTree->SetBranchAddress ("code",       &code);
+  //tagTree->SetBranchAddress ("id1",        &id1);
+  //tagTree->SetBranchAddress ("id2",        &id2);
+  //tagTree->SetBranchAddress ("x1pdf",      &x1pdf);
+  //tagTree->SetBranchAddress ("x2pdf",      &x2pdf);
+  //tagTree->SetBranchAddress ("Q",          &Q);
+  //tagTree->SetBranchAddress ("isValence1", &isValence1);
+  //tagTree->SetBranchAddress ("isValence2", &isValence2);
 
-  //inTree->SetBranchAddress ("akt2_jet_n",   &akt2_jet_n);
-  //inTree->SetBranchAddress ("akt2_jet_pt",  &akt2_jet_pt);
-  //inTree->SetBranchAddress ("akt2_jet_eta", &akt2_jet_eta);
-  //inTree->SetBranchAddress ("akt2_jet_phi", &akt2_jet_phi);
-  //inTree->SetBranchAddress ("akt2_jet_e",   &akt2_jet_e);
-  //inTree->SetBranchAddress ("akt2_jet_m",   &akt2_jet_m);
+  //tagTree->SetBranchAddress ("akt2_jet_n",   &akt2_jet_n);
+  //tagTree->SetBranchAddress ("akt2_jet_pt",  &akt2_jet_pt);
+  //tagTree->SetBranchAddress ("akt2_jet_eta", &akt2_jet_eta);
+  //tagTree->SetBranchAddress ("akt2_jet_phi", &akt2_jet_phi);
+  //tagTree->SetBranchAddress ("akt2_jet_e",   &akt2_jet_e);
+  //tagTree->SetBranchAddress ("akt2_jet_m",   &akt2_jet_m);
 
-  inTree->SetBranchAddress ("akt4_jet_n",   &akt4_jet_n);
-  inTree->SetBranchAddress ("akt4_jet_pt",  &akt4_jet_pt);
-  inTree->SetBranchAddress ("akt4_jet_eta", &akt4_jet_eta);
-  inTree->SetBranchAddress ("akt4_jet_phi", &akt4_jet_phi);
-  inTree->SetBranchAddress ("akt4_jet_e",   &akt4_jet_e);
-  inTree->SetBranchAddress ("akt4_jet_m",   &akt4_jet_m);
+  tagTree->SetBranchAddress ("akt4_jet_n",   &akt4_jet_n);
+  tagTree->SetBranchAddress ("akt4_jet_pt",  &akt4_jet_pt);
+  tagTree->SetBranchAddress ("akt4_jet_eta", &akt4_jet_eta);
+  tagTree->SetBranchAddress ("akt4_jet_phi", &akt4_jet_phi);
+  tagTree->SetBranchAddress ("akt4_jet_e",   &akt4_jet_e);
+  tagTree->SetBranchAddress ("akt4_jet_m",   &akt4_jet_m);
 
-  inTree->SetBranchAddress ("part_n",     &part_n);
-  inTree->SetBranchAddress ("part_pt",    &part_pt);
-  inTree->SetBranchAddress ("part_eta",   &part_eta);
-  inTree->SetBranchAddress ("part_y",     &part_y);
-  inTree->SetBranchAddress ("part_phi",   &part_phi);
-  inTree->SetBranchAddress ("part_e",     &part_e);
-  inTree->SetBranchAddress ("part_m",     &part_m);
+  tagTree->SetBranchAddress ("fcal_et_negEta", &fcal_et_negEta_tag);
+  tagTree->SetBranchAddress ("fcal_et_posEta", &fcal_et_posEta_tag);
+
+
+  mixTree->SetBranchAddress ("part_n",     &part_n);
+  mixTree->SetBranchAddress ("part_pt",    &part_pt);
+  mixTree->SetBranchAddress ("part_eta",   &part_eta);
+  mixTree->SetBranchAddress ("part_y",     &part_y);
+  mixTree->SetBranchAddress ("part_phi",   &part_phi);
+  mixTree->SetBranchAddress ("part_e",     &part_e);
+  mixTree->SetBranchAddress ("part_m",     &part_m);
+
+  mixTree->SetBranchAddress ("fcal_et_negEta", &fcal_et_negEta_mix);
+  mixTree->SetBranchAddress ("fcal_et_posEta", &fcal_et_posEta_mix);
 
 
   TH1D* h_trk_pt_ns_yield;
@@ -118,25 +146,10 @@ int main (int argc, char** argv) {
   TH1D* h_trk_dphi_pt_lt2_yield;
   TH2D* h2_trk_dphi_pt_lt2_cov;
 
-  TH1D* h_jet_pt_yield;
-  TH2D* h2_jet_pt_cov;
-
-  TH1D* h_jet_yield;
-
   double trk_pt_ns_counts[nPthBins] = {};
   double trk_pt_as_counts[nPthBins] = {};
   double trk_dphi_pt_gt2_counts[nDPhiBins] = {};
   double trk_dphi_pt_lt2_counts[nDPhiBins] = {};
-  double jet_ptj_counts[nPtJBins] = {};
-
-  for (int i = 0; i < nPthBins; i++) {
-    trk_pt_ns_counts[i] = 0;
-    trk_pt_as_counts[i] = 0;
-  }
-  for (int i = 0; i < nDPhiBins; i++) {
-    trk_dphi_pt_gt2_counts[i] = 0;
-    trk_dphi_pt_lt2_counts[i] = 0;
-  }
 
 
   TFile* outFile = new TFile (outFileName.c_str (), "recreate");
@@ -159,28 +172,36 @@ int main (int argc, char** argv) {
   h2_trk_dphi_pt_lt2_cov = new TH2D (Form ("h2_trk_dphi_pt_lt2_cov_%s", name.c_str ()), ";#Delta#phi_{ch, jet}", nDPhiBins, dPhiBins, nDPhiBins, dPhiBins);
   h2_trk_dphi_pt_lt2_cov->Sumw2 ();
 
-  h_jet_pt_yield = new TH1D (Form ("h_jet_pt_yield_%s", name.c_str ()), ";#it{p}_{T}^{jet} [GeV]", nPtJBins, pTJBins);
-  h_jet_pt_yield->Sumw2 ();
-  h2_jet_pt_cov = new TH2D (Form ("h2_jet_pt_cov_%s", name.c_str ()), ";#it{p}_{T}^{jet} [GeV];#it{p}_{T}^{jet} [GeV]", nPtJBins, pTJBins, nPtJBins, pTJBins);
-  h2_jet_pt_cov->Sumw2 ();
-
-  h_jet_yield = new TH1D (Form ("h_jet_yield_%s", name.c_str ()), "", 9, -0.5, 8.5);
-  h_jet_yield->Sumw2 ();
-
 
   //const float jetr = 0.4;
+  int iMix = 0;
   for (int iEvent = 0; iEvent < nEvents; iEvent++) {
     if (nEvents > 100 && iEvent % (nEvents / 100) == 0)
       cout << iEvent / (nEvents / 100) << "\% done...\r" << flush;
 
-    inTree->GetEntry (iEvent);
+    tagTree->GetEntry (iEvent);
+
+
+    // find an appropriate mixed event by matching the centrality bins
+    const int iTagCent = (ispPb ? GetpPbBin (fcal_et_posEta_tag) : GetppBin (fcal_et_negEta_tag + fcal_et_posEta_tag));
+    const int iMixOld = iMix; // edge case: if we've looped over all events, then we will never find a good match. So we need the value of iMix before looping. This guarantees something "sensible", but not 100% correct.
+
+    bool isGoodEvent = false;
+    do {
+      iMix = (iMix + 1) % nMix;
+      mixTree->GetEntry (iMix);
+      // require centrality bins are the same. Bins are defined differently for HS trigger vs. minimum bias due to autocorrelation effect.
+      isGoodEvent = (iTagCent == (ispPb ? GetpPbBkgBin (fcal_et_posEta_mix) : GetppBkgBin (fcal_et_negEta_mix + fcal_et_posEta_mix)));
+    } while (iMix != iMixOld && !isGoodEvent);
+    if (!isGoodEvent) {
+      std::cout << "No good event --> skipping event! iTagCent = " << iTagCent << std::endl;
+      continue;
+    } // else we have a good mixed event match so proceed to histogram filling
+
 
     const double ewgt = 1; // no weights 
     sumWgtsEvents += ewgt;
     sumWgtsSqEvents += ewgt*ewgt;
-
-    // all-particle jets
-    int jetCount = 0;
 
     for (int iJ = 0; iJ < akt4_jet_n; iJ++) {
       const float jpt = akt4_jet_pt[iJ];
@@ -190,17 +211,8 @@ int main (int argc, char** argv) {
       if (fabs (jeta) > 2.8)
         continue;
 
-      for (short i = 0; i < nPtJBins; i++) {
-        if (pTJBins[i] <= jpt && jpt < pTJBins[i+1]) {
-          jet_ptj_counts[i] += 1.;
-          break;
-        }
-      }
-
       if (jpt < 60)
         continue;
-
-      jetCount++;
 
       double jwgt = 1;
       //if (boost == 0.465 && jeta > 1.1 && jeta < 3.6) {
@@ -225,19 +237,19 @@ int main (int argc, char** argv) {
           if (dPhiBins[i] <= dphi && dphi < dPhiBins[i+1]) {
             if (trk_pt > 2)
               trk_dphi_pt_gt2_counts[i] += 1.;
-            else if (trk_pt > 0.1)
+            else if (trk_pt > 0.5)
               trk_dphi_pt_lt2_counts[i] += 1.;
             break;
           }
         }
 
 
-        for (int i = 0; i < nPthBins; i++) {
+        for (short i = 0; i < nPthBins; i++) {
           if (pthBins[i] <= trk_pt && trk_pt < pthBins[i+1]) {
             if (dphi >= 7.*M_PI/8.)
-              trk_pt_as_counts[i] += 1.;
-            else if (dphi < M_PI/8.)
               trk_pt_ns_counts[i] += 1.;
+            else if (dphi < M_PI/8.)
+              trk_pt_as_counts[i] += 1.;
             break;
           }
         }
@@ -253,37 +265,37 @@ int main (int argc, char** argv) {
 
       h = h_trk_pt_ns_yield;
       h2 = h2_trk_pt_ns_cov;
-      arr = &(trk_pt_ns_counts[0]);
-      for (int iX = 0; iX < nPthBins; iX++) {
+      arr = trk_pt_ns_counts;
+      for (short iX = 0; iX < nPthBins; iX++) {
         h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (ewgt * jwgt) * arr[iX]);
-        for (int iY = 0; iY < nPthBins; iY++)
+        for (short iY = 0; iY < nPthBins; iY++)
           h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (ewgt * jwgt) * (arr[iX])*(arr[iY]));
       }
 
       h = h_trk_pt_as_yield;
       h2 = h2_trk_pt_as_cov;
-      arr = &(trk_pt_as_counts[0]);
-      for (int iX = 0; iX < nPthBins; iX++) {
+      arr = trk_pt_as_counts;
+      for (short iX = 0; iX < nPthBins; iX++) {
         h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (ewgt * jwgt) * arr[iX]);
-        for (int iY = 0; iY < nPthBins; iY++)
+        for (short iY = 0; iY < nPthBins; iY++)
           h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (ewgt * jwgt) * (arr[iX])*(arr[iY]));
       }
 
       h = h_trk_dphi_pt_gt2_yield;
       h2 = h2_trk_dphi_pt_gt2_cov;
       arr = trk_dphi_pt_gt2_counts;
-      for (int iX = 0; iX < nDPhiBins; iX++) {
+      for (short iX = 0; iX < nDPhiBins; iX++) {
         h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (ewgt * jwgt) * arr[iX]);
-        for (int iY = 0; iY < nDPhiBins; iY++)
+        for (short iY = 0; iY < nDPhiBins; iY++)
           h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) +(ewgt * jwgt) *  (arr[iX])*(arr[iY]));
       }
 
       h = h_trk_dphi_pt_lt2_yield;
       h2 = h2_trk_dphi_pt_lt2_cov;
       arr = trk_dphi_pt_lt2_counts;
-      for (int iX = 0; iX < nDPhiBins; iX++) {
+      for (short iX = 0; iX < nDPhiBins; iX++) {
         h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (ewgt * jwgt) * arr[iX]);
-        for (int iY = 0; iY < nDPhiBins; iY++)
+        for (short iY = 0; iY < nDPhiBins; iY++)
           h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (ewgt * jwgt) * (arr[iX])*(arr[iY]));
       }
 
@@ -297,18 +309,6 @@ int main (int argc, char** argv) {
       }
 
     } // end loop over jets
-
-    for (int iX = 0; iX < nPtJBins; iX++) {
-      h_jet_pt_yield->SetBinContent (iX+1, h_jet_pt_yield->GetBinContent (iX+1) + ewgt * jet_ptj_counts[iX]);
-      for (int iY = 0; iY < nPtJBins; iY++)
-        h2_jet_pt_cov->SetBinContent (iX+1, iY+1, h2_jet_pt_cov->GetBinContent (iX+1, iY+1) + ewgt * (jet_ptj_counts[iX])*(jet_ptj_counts[iY]));
-    }
-
-    h_jet_yield->Fill (jetCount);
-
-    for (int i = 0; i < nPtJBins; i++) {
-      jet_ptj_counts[i] = 0;
-    }
 
   } // end loop over iEvent
 
@@ -369,18 +369,6 @@ int main (int argc, char** argv) {
     ScaleHist (h2, sumWgtsEvents / (nEvents * (sumWgtsEvents*sumWgtsEvents - sumWgtsSqEvents)), true);
     SetVariances (h, h2);
 
-
-    h2 = h2_jet_pt_cov;
-    h = h_jet_pt_yield;
-    ScaleHist (h, 1., true);
-    ScaleHist (h2, 1., true);
-    for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
-      for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
-        h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/sumWgtsEvents);
-    ScaleHist (h, 1./sumWgtsEvents, false);
-    ScaleHist (h2, 1./(sumWgtsEvents * (sumWgtsEvents-1)), false);
-    SetVariances (h, h2);
-
   }
 
   outFile->cd ();
@@ -394,9 +382,6 @@ int main (int argc, char** argv) {
   h2_trk_dphi_pt_gt2_cov->Write ();
   h_trk_dphi_pt_lt2_yield->Write ();
   h2_trk_dphi_pt_lt2_cov->Write ();
-  h_jet_pt_yield->Write ();
-  h2_jet_pt_cov->Write ();
-  h_jet_yield->Write (); 
   
   outFile->Close ();
 
