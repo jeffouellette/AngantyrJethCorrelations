@@ -10,6 +10,7 @@
 #include "fastjet/ClusterSequence.hh"
 
 #include "Pythia8/Pythia.h"
+#include "Pythia8/HeavyIons.h"
 
 #include <GlobalParams.h>
 #include <Utilities.h>
@@ -72,6 +73,11 @@ int main (int argc, char** argv) {
   bool b_isValence1 = false;
   bool b_isValence2 = false;
 
+  float b_b = 0;
+  int b_ncoll = 0;
+  int b_npart1 = 0;
+  int b_npart2 = 0;
+
   int b_akt2_jet_n = 0;
   float b_akt2_jet_pt[1000];
   float b_akt2_jet_eta[1000];
@@ -108,6 +114,13 @@ int main (int argc, char** argv) {
   outTree->Branch ("pTHat",       &b_pTHat,       "pTHat/F");
   outTree->Branch ("isValence1",  &b_isValence1,  "isValence1/O");
   outTree->Branch ("isValence2",  &b_isValence2,  "isValence2/O");
+
+  if (beamA != 2212 || beamB != 2212) {
+    outTree->Branch ("b",         &b_b,           "b/F");
+    outTree->Branch ("ncoll",     &b_ncoll,       "ncoll/I");
+    outTree->Branch ("npart1",    &b_npart1,      "npart1/I");
+    outTree->Branch ("npart2",    &b_npart2,      "npart2/I");
+  }
 
   outTree->Branch ("akt2_jet_n",    &b_akt2_jet_n,    "akt2_jet_n/I");
   outTree->Branch ("akt2_jet_pt",   &b_akt2_jet_pt,   "akt2_jet_pt[akt2_jet_n]/F");
@@ -232,6 +245,14 @@ int main (int argc, char** argv) {
     
     b_isValence1 = pythia.info.isValence1 ();
     b_isValence2 = pythia.info.isValence2 ();
+
+    // see https://pythia.org/doxygen/pythia8303/classPythia8_1_1Info.html or main113.cc in the examples
+    if (beamA != 2212 || beamB != 2212) {
+      b_b = pythia.info.hiInfo->b ();
+      b_ncoll = pythia.info.hiInfo->nCollNDTot ();
+      b_npart1 = pythia.info.hiInfo->nAbsTarg ();
+      b_npart2 = pythia.info.hiInfo->nAbsProj ();
+    }
 
     outTree->Fill();
   }

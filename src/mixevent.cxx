@@ -89,6 +89,9 @@ int main (int argc, char** argv) {
   float fcal_et_negEta_mix = 0;
   float fcal_et_posEta_mix = 0;
 
+  int ncoll_tag = 0;
+  int ncoll_mix = 0;
+
 
   const int nEvents = tagTree->GetEntries ();
   const int nMix = mixTree->GetEntries ();
@@ -97,43 +100,46 @@ int main (int argc, char** argv) {
   double nJetEvents = 0;
   double sumWgtsJetEvents = 0, sumWgtsSqJetEvents = 0;
 
-  //tagTree->SetBranchAddress ("code",       &code);
-  //tagTree->SetBranchAddress ("id1",        &id1);
-  //tagTree->SetBranchAddress ("id2",        &id2);
-  //tagTree->SetBranchAddress ("x1pdf",      &x1pdf);
-  //tagTree->SetBranchAddress ("x2pdf",      &x2pdf);
-  //tagTree->SetBranchAddress ("Q",          &Q);
-  //tagTree->SetBranchAddress ("isValence1", &isValence1);
-  //tagTree->SetBranchAddress ("isValence2", &isValence2);
+  //tagTree->SetBranchAddress ("code",        &code);
+  //tagTree->SetBranchAddress ("id1",         &id1);
+  //tagTree->SetBranchAddress ("id2",         &id2);
+  //tagTree->SetBranchAddress ("x1pdf",       &x1pdf);
+  //tagTree->SetBranchAddress ("x2pdf",       &x2pdf);
+  //tagTree->SetBranchAddress ("Q",           &Q);
+  //tagTree->SetBranchAddress ("isValence1",  &isValence1);
+  //tagTree->SetBranchAddress ("isValence2",  &isValence2);
 
-  //tagTree->SetBranchAddress ("akt2_jet_n",   &akt2_jet_n);
-  //tagTree->SetBranchAddress ("akt2_jet_pt",  &akt2_jet_pt);
-  //tagTree->SetBranchAddress ("akt2_jet_eta", &akt2_jet_eta);
-  //tagTree->SetBranchAddress ("akt2_jet_phi", &akt2_jet_phi);
-  //tagTree->SetBranchAddress ("akt2_jet_e",   &akt2_jet_e);
-  //tagTree->SetBranchAddress ("akt2_jet_m",   &akt2_jet_m);
+  //tagTree->SetBranchAddress ("akt2_jet_n",    &akt2_jet_n);
+  //tagTree->SetBranchAddress ("akt2_jet_pt",   &akt2_jet_pt);
+  //tagTree->SetBranchAddress ("akt2_jet_eta",  &akt2_jet_eta);
+  //tagTree->SetBranchAddress ("akt2_jet_phi",  &akt2_jet_phi);
+  //tagTree->SetBranchAddress ("akt2_jet_e",    &akt2_jet_e);
+  //tagTree->SetBranchAddress ("akt2_jet_m",    &akt2_jet_m);
 
-  tagTree->SetBranchAddress ("akt4_jet_n",   &akt4_jet_n);
-  tagTree->SetBranchAddress ("akt4_jet_pt",  &akt4_jet_pt);
-  tagTree->SetBranchAddress ("akt4_jet_eta", &akt4_jet_eta);
-  tagTree->SetBranchAddress ("akt4_jet_phi", &akt4_jet_phi);
-  tagTree->SetBranchAddress ("akt4_jet_e",   &akt4_jet_e);
-  tagTree->SetBranchAddress ("akt4_jet_m",   &akt4_jet_m);
+  tagTree->SetBranchAddress ("akt4_jet_n",    &akt4_jet_n);
+  tagTree->SetBranchAddress ("akt4_jet_pt",   &akt4_jet_pt);
+  tagTree->SetBranchAddress ("akt4_jet_eta",  &akt4_jet_eta);
+  tagTree->SetBranchAddress ("akt4_jet_phi",  &akt4_jet_phi);
+  tagTree->SetBranchAddress ("akt4_jet_e",    &akt4_jet_e);
+  tagTree->SetBranchAddress ("akt4_jet_m",    &akt4_jet_m);
 
-  tagTree->SetBranchAddress ("fcal_et_negEta", &fcal_et_negEta_tag);
-  tagTree->SetBranchAddress ("fcal_et_posEta", &fcal_et_posEta_tag);
+  tagTree->SetBranchAddress ("fcal_et_negEta",  &fcal_et_negEta_tag);
+  tagTree->SetBranchAddress ("fcal_et_posEta",  &fcal_et_posEta_tag);
+
+  tagTree->SetBranchAddress ("ncoll",           &ncoll_tag);
 
 
-  mixTree->SetBranchAddress ("part_n",     &part_n);
-  mixTree->SetBranchAddress ("part_pt",    &part_pt);
-  mixTree->SetBranchAddress ("part_eta",   &part_eta);
-  mixTree->SetBranchAddress ("part_y",     &part_y);
-  mixTree->SetBranchAddress ("part_phi",   &part_phi);
-  mixTree->SetBranchAddress ("part_e",     &part_e);
-  mixTree->SetBranchAddress ("part_m",     &part_m);
+  mixTree->SetBranchAddress ("part_n",    &part_n);
+  mixTree->SetBranchAddress ("part_pt",   &part_pt);
+  mixTree->SetBranchAddress ("part_eta",  &part_eta);
+  mixTree->SetBranchAddress ("part_y",    &part_y);
+  mixTree->SetBranchAddress ("part_phi",  &part_phi);
+  mixTree->SetBranchAddress ("part_e",    &part_e);
+  mixTree->SetBranchAddress ("part_m",    &part_m);
 
-  mixTree->SetBranchAddress ("fcal_et_negEta", &fcal_et_negEta_mix);
-  mixTree->SetBranchAddress ("fcal_et_posEta", &fcal_et_posEta_mix);
+  mixTree->SetBranchAddress ("fcal_et_negEta",  &fcal_et_negEta_mix);
+  mixTree->SetBranchAddress ("fcal_et_posEta",  &fcal_et_posEta_mix);
+  mixTree->SetBranchAddress ("ncoll",           &ncoll_mix);
 
 
   TH1D* h_trk_pt_ns_yield;
@@ -200,7 +206,8 @@ int main (int argc, char** argv) {
       iMix = (iMix + 1) % nMix;
       mixTree->GetEntry (iMix);
       // require centrality bins are the same. Bins are defined differently for HS trigger vs. minimum bias due to autocorrelation effect.
-      isGoodEvent = (iTagCent == (ispPb ? GetpPbBkgBin (fcal_et_posEta_mix) : GetppBkgBin (fcal_et_negEta_mix + fcal_et_posEta_mix)));
+      //isGoodEvent = (iTagCent == (ispPb ? GetpPbBkgBin (fcal_et_posEta_mix) : GetppBkgBin (fcal_et_negEta_mix + fcal_et_posEta_mix)));
+      isGoodEvent = (ispPb ? (ncoll_tag - ncoll_mix)/ncoll_tag < 0.05 : iTagCent == GetppBkgBin (fcal_et_negEta_mix + fcal_et_posEta_mix));
     } while (iMix != iMixOld && !isGoodEvent);
     if (!isGoodEvent) {
       std::cout << "No good event --> skipping event! iTagCent = " << iTagCent << std::endl;
