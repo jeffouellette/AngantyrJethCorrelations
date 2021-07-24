@@ -12,8 +12,8 @@
 #include "Pythia8/Pythia.h"
 #include "Pythia8/HeavyIons.h"
 
-#include <GlobalParams.h>
 #include <Utilities.h>
+#include <GlobalParams.h>
 
 #include "header.h"
 
@@ -24,7 +24,7 @@ using namespace PythiaAngantyrStudy;
 int main (int argc, char** argv) {
 
   if (argc < 8) {
-    std::cout << " usage: gen SEED SEEDOFFSET BEAMA BEAMB SQRTS MINPTHAT NEVT BOOST FILENAMEOUT" << std::endl;
+    std::cout << " usage: gen SEED SEEDOFFSET BEAMA BEAMB SQRTS BOOST NEVT CONFIGFILENAME OUTFILENAME" << std::endl;
     return 0;
   }
 
@@ -33,28 +33,41 @@ int main (int argc, char** argv) {
   const int beamA = atoi (argv[3]);
   const int beamB = atoi (argv[4]);
   const float sqrts = atof (argv[5]);
-  const float ptHatMin = atof (argv[6]);
+  const float boost = atof (argv[6]);
   const int nEvents = atoi (argv[7]);
-  const float boost = atof (argv[8]);
-  const string outFileName = string (argv[9]);
+  const std::string configFileName = std::string (argv[8]);
+  const std::string outFileName = std::string (argv[9]);
 
   // Generator. Process selection. LHC initialization. Histogram.
   Pythia pythia;
 
+  // fix seed - different for each job but replicable
   pythia.readString ("Random:setSeed = on");
   pythia.readString (Form ("Random:seed = %i", seed));
 
-  const float eA = proton_mass * std::cosh ( 0.5 * std::log ( ( 1. + std::sqrt (1. - 4.*pow (proton_mass/sqrts, 2))) / ( 1. - std::sqrt (1. - 4.*pow (proton_mass/sqrts, 2)))) + boost);
-  const float eB = proton_mass * std::cosh ( 0.5 * std::log ( ( 1. + std::sqrt (1. - 4.*pow (proton_mass/sqrts, 2))) / ( 1. - std::sqrt (1. - 4.*pow (proton_mass/sqrts, 2)))) - boost);
+  // calculate the necessary energy of each beam given CoM boosted rapidity & sqrt(s).
+  const float eA = proton_mass * std::cosh (0.5 * std::log ((1. + std::sqrt (1. - 4.*std::pow (proton_mass/sqrts, 2))) / ( 1. - std::sqrt (1. - 4.*std::pow (proton_mass/sqrts, 2)))) + boost);
+  const float eB = proton_mass * std::cosh (0.5 * std::log ((1. + std::sqrt (1. - 4.*std::pow (proton_mass/sqrts, 2))) / ( 1. - std::sqrt (1. - 4.*std::pow (proton_mass/sqrts, 2)))) - boost);
 
+  // setup incoming beams
   pythia.readString ("Beams:frameType = 2");
   pythia.readString (Form ("Beams:idA = %i", beamA));
   pythia.readString (Form ("Beams:idB = %i", beamB));
   pythia.readString (Form ("Beams:eA = %g", eA));
   pythia.readString (Form ("Beams:eB = %g", eB));
-  pythia.readString("HardQCD:all = on");
 
-  pythia.readString (Form ("PhaseSpace:pTHatMin = %g", ptHatMin));
+  // turn on Angantyr (instead of default Pythia)
+  pythia.readString ("HeavyIon:mode = 2");
+  pythia.readString ("HeavyIon:SigFitNGen = 0");
+  pythia.readString ("HeavyIon:SigFitDefPar = 13.91,1.78,0.22,0.0,0.0,0.0,0.0,0.0");
+
+  // read process configuration from file (e.g. MPI, HardQCD, SoftQCD, electroweak...)
+  ifstream configFile;
+  configFile.open (configFileName.c_str ());
+  std::string line;
+  while (getline (configFile, line)) {
+    pythia.readString (line.c_str ()); 
+  }
 
   pythia.init ();
 
@@ -72,6 +85,8 @@ int main (int argc, char** argv) {
   float b_pTHat = 0;
   bool b_isValence1 = false;
   bool b_isValence2 = false;
+
+  bool b_firesMBTrigger = false;
 
   float b_b = 0;
   int b_ncoll = 0;
@@ -100,8 +115,11 @@ int main (int argc, char** argv) {
   float b_part_e[10000];
   float b_part_m[10000];
 
-  float fcal_et_negEta = 0;
-  float fcal_et_posEta = 0;
+  float b_fcal_et_negEta = 0;
+  float b_fcal_et_posEta = 0;
+
+  float b_gap_negEta = 0;
+  float b_gap_posEta = 0;
 
   TTree* outTree = new TTree ("tree", "tree");
 
@@ -114,6 +132,8 @@ int main (int argc, char** argv) {
   outTree->Branch ("pTHat",       &b_pTHat,       "pTHat/F");
   outTree->Branch ("isValence1",  &b_isValence1,  "isValence1/O");
   outTree->Branch ("isValence2",  &b_isValence2,  "isValence2/O");
+
+  outTree->Branch ("firesMBTrigger", &b_firesMBTrigger, "firesMBTrigger/O");
 
   if (beamA != 2212 || beamB != 2212) {
     outTree->Branch ("b",         &b_b,           "b/F");
@@ -144,10 +164,14 @@ int main (int argc, char** argv) {
   outTree->Branch ("part_e",    &b_part_e,    "part_e[part_n]/F");
   outTree->Branch ("part_m",    &b_part_m,    "part_m[part_n]/F");
 
-  outTree->Branch ("fcal_et_negEta", &fcal_et_negEta, "fcal_et_negEta/F");
-  outTree->Branch ("fcal_et_posEta", &fcal_et_posEta, "fcal_et_posEta/F");
+  outTree->Branch ("fcal_et_negEta", &b_fcal_et_negEta, "fcal_et_negEta/F");
+  outTree->Branch ("fcal_et_posEta", &b_fcal_et_posEta, "fcal_et_posEta/F");
 
-  vector <fastjet::PseudoJet> particles;
+  outTree->Branch ("gap_negEta",  &b_gap_negEta,  "gap_negEta/F");
+  outTree->Branch ("gap_posEta",  &b_gap_posEta,  "gap_posEta/F");
+
+  std::vector <fastjet::PseudoJet> particles;
+  int* nPartEta = new int[98];
 
   for (int iEvent = 0; iEvent < nEvents; iEvent++) {
     if (nEvents > 100 && iEvent % (nEvents / 100) == 0)
@@ -158,24 +182,37 @@ int main (int argc, char** argv) {
 
     particles.clear ();
 
+    b_firesMBTrigger = false;
     b_part_n = 0;
-    fcal_et_negEta = 0;
-    fcal_et_posEta = 0;
+    b_fcal_et_negEta = 0;
+    b_fcal_et_posEta = 0;
+    for (int iEta = 0; iEta < 98; iEta++) nPartEta[iEta] = 0;
+
     for (int i = 0; i < pythia.event.size (); i++) {
 
       if (!pythia.event[i].isFinal ())
         continue; // only use final state particles
 
-      if (abs (pythia.event[i].id ()) == 12 || abs (pythia.event[i].id ()) == 14 || abs (pythia.event[i].id ()) == 16)
+      if (std::abs (pythia.event[i].id ()) == 12 || std::abs (pythia.event[i].id ()) == 14 || std::abs (pythia.event[i].id ()) == 16)
         continue; // check that particle is not a neutrino
 
-      if (abs (pythia.event[i].id ()) != 13) // exclude muons from jet clustering
+      if (pythia.event[i].pT () > 0.2 && std::fabs (pythia.event[i].eta ()) < 4.9) {
+        int iEta = 0;
+        while (-4.8+0.1*iEta < pythia.event[i].eta () && iEta < 98) iEta++;
+        if (iEta < 98)
+          nPartEta[iEta]++;
+      }
+
+      if (std::abs (pythia.event[i].id ()) != 13) // exclude muons from jet clustering
         particles.push_back (fastjet::PseudoJet (pythia.event[i].px (), pythia.event[i].py (), pythia.event[i].pz (), pythia.event[i].e ()));
 
       if (-4.9 < pythia.event[i].eta () && pythia.event[i].eta () < -3.2)
-        fcal_et_negEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2)); // add particle E_T
+        b_fcal_et_negEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2)); // add particle E_T
       else if (3.2 < pythia.event[i].eta () && pythia.event[i].eta () < 4.9)
-        fcal_et_posEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2)); // add particle E_T
+        b_fcal_et_posEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2)); // add particle E_T
+
+      if (std::fabs (pythia.event[i].id ()) < 2.5 && pythia.event[i].pT () > 0.2)
+        b_firesMBTrigger = true;
 
       if (!(pythia.event[i].isCharged ()))
         continue; // check that particle is charged (is not neutral)
@@ -198,9 +235,19 @@ int main (int argc, char** argv) {
     }
 
 
+    // calculate rapidity gaps at positive & negative eta
+    int iEta = 0;
+    while (nPartEta[iEta] == 0) iEta++;
+    b_gap_negEta = iEta*0.1;
+
+    iEta = 97;
+    while (nPartEta[iEta] == 0) iEta--;
+    b_gap_posEta = (97-iEta)*0.1;
+
+
     // now run jet clustering
     fastjet::ClusterSequence clusterSeqAkt2Jets (particles, antiKt2);
-    vector<fastjet::PseudoJet> sortedAkt2Jets = fastjet::sorted_by_pt (clusterSeqAkt2Jets.inclusive_jets ());
+    std::vector <fastjet::PseudoJet> sortedAkt2Jets = fastjet::sorted_by_pt (clusterSeqAkt2Jets.inclusive_jets ());
 
     b_akt2_jet_n = 0;
     for (fastjet::PseudoJet jet : sortedAkt2Jets) {
@@ -218,7 +265,7 @@ int main (int argc, char** argv) {
     }
 
     fastjet::ClusterSequence clusterSeqAkt4Jets (particles, antiKt4);
-    vector<fastjet::PseudoJet> sortedAkt4Jets = fastjet::sorted_by_pt (clusterSeqAkt4Jets.inclusive_jets ());
+    std::vector <fastjet::PseudoJet> sortedAkt4Jets = fastjet::sorted_by_pt (clusterSeqAkt4Jets.inclusive_jets ());
 
     b_akt4_jet_n = 0;
     for (fastjet::PseudoJet jet : sortedAkt4Jets) {
@@ -256,6 +303,8 @@ int main (int argc, char** argv) {
 
     outTree->Fill();
   }
+
+  delete[] nPartEta;
 
   pythia.stat();
   

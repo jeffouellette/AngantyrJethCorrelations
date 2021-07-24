@@ -12,8 +12,8 @@
 #include "Pythia8/Pythia.h"
 #include "Pythia8/HeavyIons.h"
 
-#include <GlobalParams.h>
 #include <Utilities.h>
+#include <GlobalParams.h>
 
 #include "header.h"
 
@@ -44,17 +44,22 @@ int main (int argc, char** argv) {
   pythia.readString ("Random:setSeed = on");
   pythia.readString (Form ("Random:seed = %i", seed));
 
-  const float eA = proton_mass * std::cosh ( 0.5 * std::log ( ( 1. + std::sqrt (1. - 4.*pow (proton_mass/sqrts, 2))) / ( 1. - std::sqrt (1. - 4.*pow (proton_mass/sqrts, 2)))) + boost);
-  const float eB = proton_mass * std::cosh ( 0.5 * std::log ( ( 1. + std::sqrt (1. - 4.*pow (proton_mass/sqrts, 2))) / ( 1. - std::sqrt (1. - 4.*pow (proton_mass/sqrts, 2)))) - boost);
+  const float eA = proton_mass * std::cosh ( 0.5 * std::log ( ( 1. + std::sqrt (1. - 4.*std::pow (proton_mass/sqrts, 2))) / ( 1. - std::sqrt (1. - 4.*std::pow (proton_mass/sqrts, 2)))) + boost);
+  const float eB = proton_mass * std::cosh ( 0.5 * std::log ( ( 1. + std::sqrt (1. - 4.*std::pow (proton_mass/sqrts, 2))) / ( 1. - std::sqrt (1. - 4.*std::pow (proton_mass/sqrts, 2)))) - boost);
 
+  pythia.readString("HeavyIon:mode = 2");
   pythia.readString ("Beams:frameType = 2");
   pythia.readString (Form ("Beams:idA = %i", beamA));
   pythia.readString (Form ("Beams:idB = %i", beamB));
   pythia.readString (Form ("Beams:eA = %g", eA));
   pythia.readString (Form ("Beams:eB = %g", eB));
-  pythia.readString("SoftQCD:nonDiffractive = on");                              
-  //pythia.readString("SoftQCD:singleDiffractive = on");                           
-  //pythia.readString("SoftQCD:doubleDiffractive = on");  
+  //pythia.readString("SoftQCD:inelastic = on");
+  pythia.readString("SoftQCD:nonDiffractive = on");
+  //pythia.readString("SoftQCD:singleDiffractive = on");
+  //pythia.readString("SoftQCD:doubleDiffractive = on");
+  //pythia.readString("HardQCD:all = on"); // for testing
+
+  //pythia.readString("MultipartonInteractions:allowRescatter = on");
 
   pythia.init ();
 
@@ -147,7 +152,7 @@ int main (int argc, char** argv) {
   outTree->Branch ("fcal_et_negEta", &fcal_et_negEta, "fcal_et_negEta/F");
   outTree->Branch ("fcal_et_posEta", &fcal_et_posEta, "fcal_et_posEta/F");
 
-  vector <fastjet::PseudoJet> particles;
+  std::vector <fastjet::PseudoJet> particles;
 
   for (int iEvent = 0; iEvent < nEvents; iEvent++) {
     if (nEvents > 100 && iEvent % (nEvents / 100) == 0)
@@ -200,7 +205,7 @@ int main (int argc, char** argv) {
 
     // now run jet clustering
     fastjet::ClusterSequence clusterSeqAkt2Jets (particles, antiKt2);
-    vector<fastjet::PseudoJet> sortedAkt2Jets = fastjet::sorted_by_pt (clusterSeqAkt2Jets.inclusive_jets ());
+    std::vector <fastjet::PseudoJet> sortedAkt2Jets = fastjet::sorted_by_pt (clusterSeqAkt2Jets.inclusive_jets ());
 
     b_akt2_jet_n = 0;
     for (fastjet::PseudoJet jet : sortedAkt2Jets) {
@@ -218,7 +223,7 @@ int main (int argc, char** argv) {
     }
 
     fastjet::ClusterSequence clusterSeqAkt4Jets (particles, antiKt4);
-    vector<fastjet::PseudoJet> sortedAkt4Jets = fastjet::sorted_by_pt (clusterSeqAkt4Jets.inclusive_jets ());
+    std::vector <fastjet::PseudoJet> sortedAkt4Jets = fastjet::sorted_by_pt (clusterSeqAkt4Jets.inclusive_jets ());
 
     b_akt4_jet_n = 0;
     for (fastjet::PseudoJet jet : sortedAkt4Jets) {

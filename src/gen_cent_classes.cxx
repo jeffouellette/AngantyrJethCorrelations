@@ -16,7 +16,6 @@
 
 #include <AtlasStyle.h>
 
-#include <GlobalParams.h>
 #include <Utilities.h>
 #include <MyColors.h>
 
@@ -40,6 +39,8 @@ TH1D* h_fcal_et_tot_pPb = nullptr;
 TH1D* h_fcal_et_negEta_pPb_bkg = nullptr;
 TH1D* h_fcal_et_posEta_pPb_bkg = nullptr;
 TH1D* h_fcal_et_tot_pPb_bkg = nullptr;
+TH1D* h_ncoll_pPb = nullptr;
+TH1D* h_ncoll_pPb_bkg = nullptr;
 
 
 int main (int argc, char** argv) {
@@ -54,20 +55,11 @@ int main (int argc, char** argv) {
   h_fcal_et_negEta_pp = (TH1D*) inFile->Get ("h_fcal_et_negEta_pp");
   h_fcal_et_posEta_pp = (TH1D*) inFile->Get ("h_fcal_et_posEta_pp");
 
-  inFile = new TFile ("rootFiles/pp/cent_hists_bkg.root", "read");
-  h_fcal_et_tot_pp_bkg = (TH1D*) inFile->Get ("h_fcal_et_tot_pp_bkg");
-  h_fcal_et_negEta_pp_bkg = (TH1D*) inFile->Get ("h_fcal_et_negEta_pp_bkg");
-  h_fcal_et_posEta_pp_bkg = (TH1D*) inFile->Get ("h_fcal_et_posEta_pp_bkg");
-
   inFile = new TFile ("rootFiles/pPb/cent_hists.root", "read");
   h_fcal_et_tot_pPb = (TH1D*) inFile->Get ("h_fcal_et_tot_pPb");
   h_fcal_et_negEta_pPb = (TH1D*) inFile->Get ("h_fcal_et_negEta_pPb");
   h_fcal_et_posEta_pPb = (TH1D*) inFile->Get ("h_fcal_et_posEta_pPb");
-
-  inFile = new TFile ("rootFiles/pPb/cent_hists_bkg.root", "read");
-  h_fcal_et_tot_pPb_bkg = (TH1D*) inFile->Get ("h_fcal_et_tot_pPb_bkg");
-  h_fcal_et_negEta_pPb_bkg = (TH1D*) inFile->Get ("h_fcal_et_negEta_pPb_bkg");
-  h_fcal_et_posEta_pPb_bkg = (TH1D*) inFile->Get ("h_fcal_et_posEta_pPb_bkg");
+  h_ncoll_pPb = (TH1D*) inFile->Get ("h_ncoll_pPb");
 
 
   double xq[101];
@@ -104,42 +96,10 @@ int main (int argc, char** argv) {
     SaferDelete (&h);
 
 
-    h = (TH1D*) h_fcal_et_tot_pp_bkg->Clone ("htemp");
-    h->GetQuantiles (101, yq, xq);
-  
-    cutsfile.open ("aux/ppBkgFCalCentCuts.dat");
-    for (int i = 0; i < 101; i++) {
-      std::cout << xq[i] << ", " << yq[i] << std::endl;
-      cutsfile << std::setw (6) << percs[i] << "\t" << yq[i] << "\n";
-    }
-    cutsfile.close ();
-
-    h->SetLineColor (colors[1]);
-    h->SetLineWidth (2);
-    h->DrawCopy ("hist same");
-    SaferDelete (&h);
-
-
     h = (TH1D*) h_fcal_et_posEta_pPb->Clone ("htemp");
     h->GetQuantiles (101, yq, xq);
   
     cutsfile.open ("aux/pPbFCalCentCuts.dat");
-    for (int i = 0; i < 101; i++) {
-      std::cout << xq[i] << ", " << yq[i] << std::endl;
-      cutsfile << std::setw (6) << percs[i] << "\t" << yq[i] << "\n";
-    }
-    cutsfile.close ();
-
-    h->SetLineColor (colors[2]);
-    h->SetLineWidth (2);
-    h->DrawCopy ("hist same");
-    SaferDelete (&h);
-
-  
-    h = (TH1D*) h_fcal_et_posEta_pPb_bkg->Clone ("htemp");
-    h->GetQuantiles (101, yq, xq);
-  
-    cutsfile.open ("aux/pPbBkgFCalCentCuts.dat");
     for (int i = 0; i < 101; i++) {
       std::cout << xq[i] << ", " << yq[i] << std::endl;
       cutsfile << std::setw (6) << percs[i] << "\t" << yq[i] << "\n";
@@ -151,14 +111,47 @@ int main (int argc, char** argv) {
     h->DrawCopy ("hist same");
     SaferDelete (&h);
 
-    myText (0.55, 0.88, kBlack, "#bf{Pythia 8.303} Angantyr, #sqrt{s} = 5.02 TeV", 0.032);
-    myText (0.55, 0.84, colors[0], "#it{pp} w/ #it{p}_{T}^{jet} > 60 GeV", 0.032);
-    myText (0.55, 0.80, colors[1], "#it{pp} MinBias", 0.032);
-    myText (0.55, 0.76, colors[2], "#it{p}+Pb w/ #it{p}_{T}^{jet} > 60 GeV (Pb-side)", 0.032);
-    myText (0.55, 0.72, colors[3], "#it{p}+Pb MinBias (Pb-side)", 0.032);
+  
+    myText (0.55, 0.88, kBlack, "#bf{Pythia 8.306} Angantyr, #sqrt{s_{NN}} = 5.02 TeV", 0.030);
+    myText (0.55, 0.84, kBlack, "SoftQCD:Nondiffractive = #bf{on}", 0.030);
+    myText (0.55, 0.80, colors[0], "#it{pp}", 0.030);
+    myText (0.55, 0.76, colors[3], "#it{p}+Pb", 0.030);
 
 
     c->SaveAs ("Plots/FcalDists.pdf");
+  }
+
+
+
+  {
+    TCanvas* c = new TCanvas ();
+
+    c->SetLogy ();
+
+    TH1D* h = nullptr;
+    ofstream cutsfile;
+
+    h = (TH1D*) h_ncoll_pPb->Clone ("htemp");
+    h->GetQuantiles (101, yq, xq);
+  
+    cutsfile.open ("aux/pPbNCollCuts.dat");
+    for (int i = 0; i < 101; i++) {
+      std::cout << xq[i] << ", " << yq[i] << std::endl;
+      cutsfile << std::setw (6) << percs[i] << "\t" << yq[i] << "\n";
+    }
+    cutsfile.close ();
+
+    h->SetLineColor (myCyan);
+    h->SetLineWidth (2);
+    h->DrawCopy ("hist");
+    SaferDelete (&h);
+
+    myText (0.55, 0.88, kBlack, "#bf{Pythia 8.306} Angantyr", 0.032);
+    myText (0.55, 0.84, kBlack, "#it{p}+Pb, #sqrt{s_{NN}} = 5.02 TeV", 0.032);
+    myText (0.55, 0.80, kBlack, "SoftQCD:Nondiffractive = #bf{on}", 0.032);
+
+
+    c->SaveAs ("Plots/NcollDists.pdf");
   }
 
 

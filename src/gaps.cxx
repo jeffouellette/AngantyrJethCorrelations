@@ -1,5 +1,5 @@
-#ifndef __centrality_cxx__
-#define __centrality_cxx__
+#ifndef __gaps_cxx__
+#define __gaps_cxx__
 
 #include <TFile.h>
 #include <TChain.h>
@@ -25,8 +25,8 @@ using namespace PythiaAngantyrStudy;
 
 int main (int argc, char** argv) {
 
-  if (argc < 4) {
-    std::cout << " usage: centrality NAME INFILEPATTERN OUTFILENAME" << std::endl;
+  if (argc < 5) {
+    std::cout << " usage: gaps NAME INFILEPATTERN OUTFILENAME" << std::endl;
     return 0;
   }
 
@@ -52,22 +52,30 @@ int main (int argc, char** argv) {
   int ncoll = 1;
   float fcal_et_negEta = 0;
   float fcal_et_posEta = 0;
+  int code;
   float gap_negEta = 0;
   float gap_posEta = 0;
 
   const int nEvents = inTree->GetEntries ();
 
+  inTree->SetBranchAddress ("code",           &code);
+
   inTree->SetBranchAddress ("fcal_et_negEta", &fcal_et_negEta);
   inTree->SetBranchAddress ("fcal_et_posEta", &fcal_et_posEta);
+
+  inTree->SetBranchAddress ("gap_negEta",     &gap_negEta);
+  inTree->SetBranchAddress ("gap_posEta",     &gap_posEta);
+
   if (name.find ("pPb") != std::string::npos)
     inTree->SetBranchAddress ("ncoll",        &ncoll);
-  inTree->SetBranchAddress ("gap_negEta", &gap_negEta);
-  inTree->SetBranchAddress ("gap_posEta", &gap_posEta);
 
   TH1D* h_fcal_et_negEta = nullptr;
   TH1D* h_fcal_et_posEta = nullptr;
   TH1D* h_fcal_et_tot = nullptr;
   TH1D* h_ncoll = nullptr;
+
+  TH1D* h_gap_negEta[4];
+  TH1D* h_gap_posEta[4];
 
 
   TFile* outFile = new TFile (outFileName.c_str (), "recreate");
@@ -79,6 +87,20 @@ int main (int argc, char** argv) {
   h_fcal_et_tot = new TH1D (Form ("h_fcal_et_tot_%s", name.c_str ()), ";#Sigma#it{E}_{T}^{FCal} [GeV]", 250, -30, 220);
   h_fcal_et_tot->Sumw2 ();
 
+  for (int i = 0; i < 4; i++) {
+
+    std::string evtType;
+    if      (i == 0)  evtType = "nondiff";
+    else if (i == 1)  evtType = "single_diff";
+    else if (i == 2)  evtType = "double_diff";
+    else if (i == 3)  evtType = "central_diff";
+
+    h_gap_negEta[i] = new TH1D (Form ("h_gap_negEta_%s_%s", evtType.c_str (), name.c_str ()), ";#Delta#it{#eta}_{neg.};Events", 98, -0.05, 9.85);
+    h_gap_negEta[i]->Sumw2 ();
+    h_gap_posEta[i] = new TH1D (Form ("h_gap_posEta_%s_%s", evtType.c_str (), name.c_str ()), ";#Delta#it{#eta}_{pos.};Events", 98, -0.05, 9.85);
+    h_gap_posEta[i]->Sumw2 ();
+  }
+
   h_ncoll = new TH1D (Form ("h_ncoll_%s", name.c_str ()), ";N_{coll}", 100, -0.5, 99.5);
   h_ncoll->Sumw2 ();
 
@@ -89,12 +111,20 @@ int main (int argc, char** argv) {
 
     inTree->GetEntry (iEvent);
 
-    if (gap_posEta > 1.4 || gap_negEta > 1.4)
-      continue;
-
     h_fcal_et_negEta->Fill (fcal_et_negEta);
     h_fcal_et_posEta->Fill (fcal_et_posEta);
     h_fcal_et_tot->Fill (fcal_et_negEta + fcal_et_posEta);
+
+    int i = -1;
+    if      (code == 101)                 i = 0; // non-diffractive
+    else if (code == 103 || code == 104)  i = 1; // single diffractive
+    else if (code == 105)                 i = 2; // double diffractive
+    else if (code == 106)                 i = 3; // central diffractive
+
+    if (i != -1) {
+      h_gap_negEta[i]->Fill (gap_negEta);
+      h_gap_posEta[i]->Fill (gap_posEta);
+    }
 
     h_ncoll->Fill (ncoll);
   } // end loop over iEvent
@@ -107,6 +137,11 @@ int main (int argc, char** argv) {
   h_fcal_et_tot->Write ();
 
   h_ncoll->Write ();
+
+  for (int i = 0; i < 4; i++) {
+    h_gap_negEta[i]->Write ();
+    h_gap_posEta[i]->Write ();
+  }
   
   outFile->Close ();
 

@@ -7,34 +7,54 @@
 
 namespace PythiaAngantyrStudy {
 
+const TString workPath = TString (std::getenv ("gpfs")) + "/AngantyrJethCorrelations";
+
+
+const double redPthBins[] = {0.5, 1, 1.5, 2, 4, 6, 10, 20, 30, 60};
+const int nRedPthBins = sizeof (redPthBins) / sizeof (redPthBins[0]) - 1;
+
 const double pthBins[] = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80};
 const int nPthBins = sizeof (pthBins) / sizeof (pthBins[0]) - 1;
+
 const short nDPhiBins = 24;
 const double* dPhiBins = linspace (0, M_PI, nDPhiBins);
 const int nPtJBins = 30;
 const double* pTJBins = logspace (8, 140, nPtJBins);
 
-string FormatCounts (int counts) {
+std::string GetRedPthStr (int iPth) {
+  switch (iPth) {
+    case 0: return "gt0p5_lt1";
+    case 1: return "gt1_lt1p5";
+    case 2: return "gt1p5_lt2";
+    case 3: return "gt2_lt4";
+    case 4: return "gt4_lt6";
+    case 5: return "gt6_lt10";
+    case 6: return "gt10_lt20";
+    case 7: return "gt20_lt30";
+    case 8: return "gt30_lt60";
+    default: return "gt0_ltFLTMAX";
+  }
+}
+
+std::string FormatCounts (int counts) {
   if (counts < 1000) return "";
   else if (1000 <= counts && counts < 10000) {
-    string countsStr = FormatMeasurement (counts, 0, 1);
+    std::string countsStr = FormatMeasurement (counts, 0, 1);
     countsStr = countsStr.substr(0, 1) + "k";
     return countsStr;
   }
   else if (10000 <= counts && counts < 100000) {
-    string countsStr = FormatMeasurement (counts, 0, 2);
+    std::string countsStr = FormatMeasurement (counts, 0, 2);
     countsStr = countsStr.substr(0, 2) + "k";
     return countsStr;
   }
   else if (100000 <= counts && counts < 1000000) {
-    string countsStr = FormatMeasurement (counts, 0, 3);
+    std::string countsStr = FormatMeasurement (counts, 0, 3);
     countsStr = countsStr.substr(0, 3) + "k";
     return countsStr;
   }
   else return "";
 } 
-
-} // end namespace pullstudy
 
 
 void ScaleHist (TH1D* h, const double sf, const bool doWidth) {
@@ -77,182 +97,81 @@ double GetMaxRapidity (const double mass, const double pT) {
 }
 
 
+/**
+ * Returns the bin corresponding to this value in the array.
+ * Returns -1 if value is less than 0th bin entry.
+ */
+short GetBin (const float val, const float* arr, const int len) {
+  if (val < arr[0])
+    return -1;
+  short i = 0;
+  while (i < len) {
+    i++;
+    if (val < arr[i])
+      break;
+  }
+  return i-1;
+}
+
+
+/**
+ * Initializes centrality bins from a given file at given percentages.
+ */
+float* InitCentCuts (const char* fName, const int* percs, const int nPercs) {
+
+  std::ifstream cutsfile;
+  cutsfile.open (fName);
+
+  float* cuts = new float[nPercs+1];
+  int iCent = 0;
+  std::string perc, dummy;
+  float cut;
+
+  while (cutsfile && iCent <= nPercs) {
+    cutsfile >> perc >> dummy;
+    cut = std::atof (dummy.c_str ());
+    if (strcmp (perc.c_str (), Form ("%i%%", percs[iCent])) == 0)
+      cuts[iCent++] = cut;
+  }
+
+  return cuts;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FCal-derived centrality classes for mixing pp events
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int ppMixPercs[] = {100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0};
+//int ppMixPercs[] = {100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0};
+int ppMixPercs[] = {100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 int nppMixBins = sizeof (ppMixPercs) / sizeof (ppMixPercs[0]) - 1;
 
-/**
- * Initializes fcal centrality cuts from latest definitions (stored in aux directory).
- */
-double* InitppCuts () {
-  std::ifstream cutsfile;
-  cutsfile.open ("aux/ppFcalCentCuts.dat");
-
-  double* cuts = new double[nppMixBins+1];
-  int iCent = 0;
-  std::string perc, dummy;
-  double cut;
-  while (cutsfile && iCent <= nppMixBins) {
-    cutsfile >> perc >> dummy;
-    cut = std::atof (dummy.c_str ());
-    if (strcmp (perc.c_str (), Form ("%i%%", ppMixPercs[iCent])) == 0)
-      cuts[iCent++] = cut;
-  }
-
-  return cuts;
-}
-
-const double* ppCuts = InitppCuts ();
-
-
-/**
- * Returns the bin corresponding to this sum fcal et, assuming HS trigger distribution for fcal et.
- * Returns -1 for >100% peripheral collisions (i.e. FCal Et is less than energy for 100% centrality).
- */
-short GetppBin (const float fcal_et) {
-  if (fcal_et < ppCuts[0])
-    return -1;
-  short i = 0;
-  while (i < nppMixBins) {
-    i++;
-    if (fcal_et < ppCuts[i])
-      break;
-  }
-  return i-1;
-}
-
-
-/**
- * Initializes fcal centrality cuts from latest definitions (stored in aux directory).
- * These are meant for minimum bias events (since distributions differ with a HS trigger).
- */
-double* InitppBkgCuts () {
-  std::ifstream cutsfile;
-  cutsfile.open ("aux/ppBkgFcalCentCuts.dat");
-
-  double* cuts = new double[nppMixBins+1];
-  int iCent = 0;
-  std::string perc, dummy;
-  double cut;
-  while (cutsfile && iCent <= nppMixBins) {
-    cutsfile >> perc >> dummy;
-    cut = std::atof (dummy.c_str ());
-    if (strcmp (perc.c_str (), Form ("%i%%", ppMixPercs[iCent])) == 0)
-      cuts[iCent++] = cut;
-  }
-
-  return cuts;
-}
-
-const double* ppBkgCuts = InitppBkgCuts ();
-
-/**
- * Returns the bin corresponding to this sum fcal et, assuming minimum bias trigger distribution for fcal et.
- * Returns -1 for >100% peripheral collisions (i.e. FCal Et is less than energy for 100% centrality).
- */
-short GetppBkgBin (const float fcal_et) {
-  if (fcal_et < ppBkgCuts[0])
-    return -1;
-  short i = 0;
-  while (i < nppMixBins) {
-    i++;
-    if (fcal_et < ppBkgCuts[i])
-      break;
-  }
-  return i-1;
-}
-
+float* ppCuts = InitCentCuts (Form ("%s/aux/ppFcalCuts.dat", workPath.Data ()), ppMixPercs, nppMixBins);
+float* ppBkgCuts = InitCentCuts (Form ("%s/aux/ppBkgFcalCuts.dat", workPath.Data ()), ppMixPercs, nppMixBins);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FCal-derived centrality classes for mixing pPb events
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int pPbMixPercs[] = {100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0};
+//int pPbMixPercs[] = {100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0};
+int pPbMixPercs[] = {100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 int npPbMixBins = sizeof (pPbMixPercs) / sizeof (pPbMixPercs[0]) - 1;
 
-/**
- * Initializes fcal centrality cuts from latest definitions (stored in aux directory).
- */
-double* InitpPbCuts () {
-  std::ifstream cutsfile;
-  cutsfile.open ("aux/pPbFcalCentCuts.dat");
-
-  double* cuts = new double[npPbMixBins+1];
-  int iCent = 0;
-  std::string perc, dummy;
-  double cut;
-  while (cutsfile && iCent <= npPbMixBins) {
-    cutsfile >> perc >> dummy;
-    cut = std::atof (dummy.c_str ());
-    if (strcmp (perc.c_str (), Form ("%i%%", pPbMixPercs[iCent])) == 0)
-      cuts[iCent++] = cut;
-  }
-
-  return cuts;
-}
-
-const double* pPbCuts = InitpPbCuts ();
+float* pPbCuts = InitCentCuts (Form ("%s/aux/pPbFcalCuts.dat", workPath.Data ()), pPbMixPercs, npPbMixBins);
+float* pPbBkgCuts = InitCentCuts (Form ("%s/aux/pPbBkgFcalCuts.dat", workPath.Data ()), pPbMixPercs, npPbMixBins);
 
 
-/**
- * Returns the bin corresponding to this sum fcal et, assuming HS trigger distribution for fcal et.
- * Returns -1 for >100% peripheral collisions (i.e. FCal Et is less than energy for 100% centrality).
- */
-short GetpPbBin (const float fcal_et) {
-  if (fcal_et < pPbCuts[0])
-    return -1;
-  short i = 0;
-  while (i < npPbMixBins) {
-    i++;
-    if (fcal_et < pPbCuts[i])
-      break;
-  }
-  return i-1;
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Ncoll-derived centrality classes for mixing pPb events
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//int pPbNcollPercs[] = {100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0};
+int pPbNcollPercs[] = {100, 60, 40, 20, 0};
+int npPbNcollBins = sizeof (pPbNcollPercs) / sizeof (pPbNcollPercs[0]) - 1;
+
+float* pPbNcollCuts = InitCentCuts (Form ("%s/aux/pPbNCollCuts.dat", workPath.Data ()), pPbNcollPercs, npPbNcollBins);
+float* pPbBkgNcollCuts = InitCentCuts (Form ("%s/aux/pPbBkgNCollCuts.dat", workPath.Data ()), pPbNcollPercs, npPbNcollBins);
 
 
-/**
- * Initializes fcal centrality cuts from latest definitions (stored in aux directory).
- * These are meant for minimum bias events (since distributions differ with a HS trigger).
- */
-double* InitpPbBkgCuts () {
-  std::ifstream cutsfile;
-  cutsfile.open ("aux/pPbBkgFcalCentCuts.dat");
-
-  double* cuts = new double[npPbMixBins+1];
-  int iCent = 0;
-  std::string perc, dummy;
-  double cut;
-  while (cutsfile && iCent <= npPbMixBins) {
-    cutsfile >> perc >> dummy;
-    cut = std::atof (dummy.c_str ());
-    if (strcmp (perc.c_str (), Form ("%i%%", pPbMixPercs[iCent])) == 0)
-      cuts[iCent++] = cut;
-  }
-
-  return cuts;
-}
-
-const double* pPbBkgCuts = InitpPbBkgCuts ();
-
-/**
- * Returns the bin corresponding to this sum fcal et, assuming minimum bias trigger distribution for fcal et.
- * Returns -1 for >100% peripheral collisions (i.e. FCal Et is less than energy for 100% centrality).
- */
-short GetpPbBkgBin (const float fcal_et) {
-  if (fcal_et < pPbBkgCuts[0])
-    return -1;
-  short i = 0;
-  while (i < npPbMixBins) {
-    i++;
-    if (fcal_et < pPbBkgCuts[i])
-      break;
-  }
-  return i-1;
-}
-
+} // end namespace pullstudy
 
 
 #endif

@@ -19,8 +19,8 @@
 
 #include <AtlasUtils.h>
 
-#include <GlobalParams.h>
 #include <Utilities.h>
+#include <ArrayTemplates.h>
 
 #include "header.h"
 
@@ -93,12 +93,8 @@ int main (int argc, char** argv) {
   int ncoll_mix = 0;
 
 
-  const int nEvents = tagTree->GetEntries ();
+  const int nEvents = tagTree->GetEntries () / 4; // only use 25% of events for debugging
   const int nMix = mixTree->GetEntries ();
-  double sumWgtsEvents = 0, sumWgtsSqEvents = 0;
-
-  double nJetEvents = 0;
-  double sumWgtsJetEvents = 0, sumWgtsSqJetEvents = 0;
 
   //tagTree->SetBranchAddress ("code",        &code);
   //tagTree->SetBranchAddress ("id1",         &id1);
@@ -126,7 +122,8 @@ int main (int argc, char** argv) {
   tagTree->SetBranchAddress ("fcal_et_negEta",  &fcal_et_negEta_tag);
   tagTree->SetBranchAddress ("fcal_et_posEta",  &fcal_et_posEta_tag);
 
-  tagTree->SetBranchAddress ("ncoll",           &ncoll_tag);
+  if (ispPb)
+    tagTree->SetBranchAddress ("ncoll",           &ncoll_tag);
 
 
   mixTree->SetBranchAddress ("part_n",    &part_n);
@@ -139,54 +136,61 @@ int main (int argc, char** argv) {
 
   mixTree->SetBranchAddress ("fcal_et_negEta",  &fcal_et_negEta_mix);
   mixTree->SetBranchAddress ("fcal_et_posEta",  &fcal_et_posEta_mix);
-  mixTree->SetBranchAddress ("ncoll",           &ncoll_mix);
+  if (ispPb)
+    mixTree->SetBranchAddress ("ncoll",           &ncoll_mix);
 
+  const short nCentBins = (ispPb ? npPbNcollBins : 1);
 
-  TH1D* h_trk_pt_ns_yield;
-  TH2D* h2_trk_pt_ns_cov;
-  TH1D* h_trk_pt_as_yield;
-  TH2D* h2_trk_pt_as_cov;
+  int** trk_pt_counts = Get2DArray <int> (3, nPthBins);
+  int** trk_dphi_counts = Get2DArray <int> (nRedPthBins, nDPhiBins);
 
-  TH1D* h_trk_dphi_pt_gt2_yield;
-  TH2D* h2_trk_dphi_pt_gt2_cov;
-  TH1D* h_trk_dphi_pt_lt2_yield;
-  TH2D* h2_trk_dphi_pt_lt2_cov;
+  int* n_evts = Get1DArray <int> (nCentBins); // number of events used at each centrallity
 
-  double* trk_pt_ns_counts = new double[nPthBins];
-  double* trk_pt_as_counts = new double[nPthBins];
-  double* trk_dphi_pt_gt2_counts = new double[nDPhiBins];
-  double* trk_dphi_pt_lt2_counts = new double[nDPhiBins];
+  for (int iDPhi = 0; iDPhi < 3; iDPhi++)
+    for (int iPth = 0; iPth < nPthBins; iPth++)
+      trk_pt_counts[iDPhi][iPth] = 0;
 
-  for (int i = 0; i < nPthBins; i++) {
-    trk_pt_ns_counts[i] = 0;
-    trk_pt_as_counts[i] = 0;
-  }
-  for (int i = 0; i < nDPhiBins; i++) {
-    trk_dphi_pt_gt2_counts[i] = 0;
-    trk_dphi_pt_lt2_counts[i] = 0;
-  }
+  for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++)
+    for (int iDPhi = 0; iDPhi < nDPhiBins; iDPhi++)
+      trk_dphi_counts[iRedPth][iDPhi] = 0;
 
 
   TFile* outFile = new TFile (outFileName.c_str (), "recreate");
 
-  h_trk_pt_ns_yield = new TH1D (Form ("h_trk_pt_ns_yield_%s", name.c_str ()), ";#it{p}_{T}^{ch} [GeV]", nPthBins, pthBins);
-  h_trk_pt_ns_yield->Sumw2 ();
-  h2_trk_pt_ns_cov = new TH2D (Form ("h2_trk_pt_ns_cov_%s", name.c_str ()), ";#it{p}_{T}^{ch} [GeV];#it{p}_{T}^{ch} [GeV]", nPthBins, pthBins, nPthBins, pthBins);
-  h2_trk_pt_ns_cov->Sumw2 ();
-  h_trk_pt_as_yield = new TH1D (Form ("h_trk_pt_as_yield_%s", name.c_str ()), ";#it{p}_{T}^{ch} [GeV]", nPthBins, pthBins);
-  h_trk_pt_as_yield->Sumw2 ();
-  h2_trk_pt_as_cov = new TH2D (Form ("h2_trk_pt_as_cov_%s", name.c_str ()), ";#it{p}_{T}^{ch} [GeV];#it{p}_{T}^{ch} [GeV]", nPthBins, pthBins, nPthBins, pthBins);
-  h2_trk_pt_as_cov->Sumw2 ();
+  TH1D*** h_trk_pt_yield = Get2DArray <TH1D*> (3, nCentBins); // near-side, perpendicular, and away-side
+  TH2D*** h2_trk_pt_cov  = Get2DArray <TH2D*> (3, nCentBins);
 
-  h_trk_dphi_pt_gt2_yield = new TH1D (Form ("h_trk_dphi_pt_gt2_yield_%s", name.c_str ()), ";#Delta#phi_{ch, jet}", nDPhiBins, dPhiBins);
-  h_trk_dphi_pt_gt2_yield->Sumw2 ();
-  h2_trk_dphi_pt_gt2_cov = new TH2D (Form ("h2_trk_dphi_pt_gt2_cov_%s", name.c_str ()), ";#Delta#phi_{ch, jet}", nDPhiBins, dPhiBins, nDPhiBins, dPhiBins);
-  h2_trk_dphi_pt_gt2_cov->Sumw2 ();
-  h_trk_dphi_pt_lt2_yield = new TH1D (Form ("h_trk_dphi_pt_lt2_yield_%s", name.c_str ()), ";#Delta#phi_{ch, jet}", nDPhiBins, dPhiBins);
-  h_trk_dphi_pt_lt2_yield->Sumw2 ();
-  h2_trk_dphi_pt_lt2_cov = new TH2D (Form ("h2_trk_dphi_pt_lt2_cov_%s", name.c_str ()), ";#Delta#phi_{ch, jet}", nDPhiBins, dPhiBins, nDPhiBins, dPhiBins);
-  h2_trk_dphi_pt_lt2_cov->Sumw2 ();
+  TH1D*** h_trk_dphi_yield = Get2DArray <TH1D*> (nRedPthBins, nCentBins); // many different pT bins
+  TH2D*** h2_trk_dphi_cov  = Get2DArray <TH2D*> (nRedPthBins, nCentBins);
 
+  for (int iCent = 0; iCent < nCentBins; iCent++) {
+
+    const std::string centStr = (nCentBins == 1 ? "" : Form ("cent%i_", iCent));
+ 
+    for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
+      const std::string dphiStr = (iDPhi == 0 ? "ns" : (iDPhi == 1 ? "perp" : "as"));
+
+      h_trk_pt_yield[iDPhi][iCent] = new TH1D (Form ("h_trk_pt_%s_yield_%s%s", dphiStr.c_str (), centStr.c_str (), name.c_str ()), ";#it{p}_{T}^{ch} [GeV];", nPthBins, pthBins);
+      h_trk_pt_yield[iDPhi][iCent]->Sumw2 ();
+      h2_trk_pt_cov[iDPhi][iCent] = new TH2D (Form ("h2_trk_pt_%s_cov_%s%s", dphiStr.c_str (), centStr.c_str (), name.c_str ()), ";#it{p}_{T}^{ch} [GeV];#it{p}_{T}^{ch} [GeV]", nPthBins, pthBins, nPthBins, pthBins);
+      h2_trk_pt_cov[iDPhi][iCent]->Sumw2 ();
+    }
+
+    for (int iPth = 0; iPth < nRedPthBins; iPth++) {
+      const std::string pthStr = GetRedPthStr (iPth);
+
+      h_trk_dphi_yield[iPth][iCent] = new TH1D (Form ("h_trk_dphi_%s_yield_%s%s", pthStr.c_str (), centStr.c_str (), name.c_str ()), ";#Delta#phi_{ch, jet};", nDPhiBins, dPhiBins);
+      h_trk_dphi_yield[iPth][iCent]->Sumw2 ();
+      h2_trk_dphi_cov[iPth][iCent] = new TH2D (Form ("h2_trk_dphi_%s_cov_%s%s", pthStr.c_str (), centStr.c_str (), name.c_str ()), ";#Delta#phi_{ch, jet};", nDPhiBins, dPhiBins, nDPhiBins, dPhiBins);
+      h2_trk_dphi_cov[iPth][iCent]->Sumw2 ();
+    }
+
+  }
+
+
+  //int iMinNcoll = 0;
+  //while (iMinNcoll < npPbNcollBins && pPbNcollPercs[iMinNcoll++] != 20);
+  //const double minNcoll = pPbNcollCuts[iMinNcoll];
 
   //const float jetr = 0.4;
   int iMix = 0;
@@ -196,18 +200,23 @@ int main (int argc, char** argv) {
 
     tagTree->GetEntry (iEvent);
 
+    const short iCent = (ispPb ? GetBin (ncoll_tag, pPbBkgNcollCuts, npPbNcollBins) : 0);
+    //if (ispPb && ncoll_tag < minNcoll)
+    //  continue;
 
     // find an appropriate mixed event by matching the centrality bins
-    const int iTagCent = (ispPb ? GetpPbBin (fcal_et_posEta_tag) : GetppBin (fcal_et_negEta_tag + fcal_et_posEta_tag));
+    const int iTagCent = (ispPb ? GetBin (fcal_et_posEta_tag, pPbBkgCuts, npPbMixBins) : GetBin (fcal_et_negEta_tag + fcal_et_posEta_tag, ppBkgCuts, nppMixBins));
+    //const int iTagCent = (ispPb ? GetBin (fcal_et_posEta_tag, pPbBkgCuts, npPbMixBins) : GetBin (fcal_et_negEta_tag + fcal_et_posEta_tag, ppBkgCuts, nppMixBins));
     const int iMixOld = iMix; // edge case: if we've looped over all events, then we will never find a good match. So we need the value of iMix before looping. This guarantees something "sensible", but not 100% correct.
 
     bool isGoodEvent = false;
     do {
       iMix = (iMix + 1) % nMix;
       mixTree->GetEntry (iMix);
-      // require centrality bins are the same. Bins are defined differently for HS trigger vs. minimum bias due to autocorrelation effect.
-      //isGoodEvent = (iTagCent == (ispPb ? GetpPbBkgBin (fcal_et_posEta_mix) : GetppBkgBin (fcal_et_negEta_mix + fcal_et_posEta_mix)));
-      isGoodEvent = (ispPb ? (ncoll_tag - ncoll_mix)/ncoll_tag < 0.05 : iTagCent == GetppBkgBin (fcal_et_negEta_mix + fcal_et_posEta_mix));
+      // require centrality bins are the same.
+      isGoodEvent = (iTagCent == (ispPb ? GetBin (fcal_et_posEta_mix, pPbBkgCuts, npPbMixBins) : GetBin (fcal_et_negEta_mix + fcal_et_posEta_mix, ppBkgCuts, nppMixBins)));
+      //isGoodEvent = (ispPb ? (ncoll_tag - ncoll_mix)/ncoll_tag < 0.05 : iTagCent == GetBin (fcal_et_negEta_mix + fcal_et_posEta_mix, ppBkgCuts, nppMixBins));
+      //if (ispPb) isGoodEvent = isGoodEvent && (iCent == GetBin (ncoll_mix, pPbBkgNcollCuts, npPbNcollBins));
     } while (iMix != iMixOld && !isGoodEvent);
     if (!isGoodEvent) {
       std::cout << "No good event --> skipping event! iTagCent = " << iTagCent << std::endl;
@@ -215,27 +224,21 @@ int main (int argc, char** argv) {
     } // else we have a good mixed event match so proceed to histogram filling
 
 
-    const double ewgt = 1; // no weights 
-    sumWgtsEvents += ewgt;
-    sumWgtsSqEvents += ewgt*ewgt;
+    int jetCount = 0;
 
     for (int iJ = 0; iJ < akt4_jet_n; iJ++) {
       const float jpt = akt4_jet_pt[iJ];
       const float jeta = akt4_jet_eta[iJ];
       const float jphi = akt4_jet_phi[iJ];
 
-      if (fabs (jeta) > 2.8)
+      if (std::fabs (jeta) > 2.8)
         continue;
 
       if (jpt < 60)
         continue;
 
-      double jwgt = 1;
-      //if (boost == 0.465 && jeta > 1.1 && jeta < 3.6) {
-      //  if (InDisabledHEC (jeta, jphi, jetr)) continue;
-      //  else jwgt = 2.*M_PI / (3.*M_PI/2. - 2*jetr);
-      //}
-     
+      jetCount++;
+
       // now loop over the particles in the recorded event
       for (int iPart = 0; iPart < part_n; iPart++) {
 
@@ -243,166 +246,139 @@ int main (int argc, char** argv) {
         const float trk_eta = part_eta[iPart];
         const float dphi = DeltaPhi (part_phi[iPart], jphi);
 
-        if (fabs (part_eta[iPart]) > 2.5)
+        if (std::fabs (part_eta[iPart]) > 2.5)
           continue;
 
-        if (std::fabs (trk_eta - boost) > 2.5-0.465)
+        if (std::fabs (trk_eta - boost) > 2.035) // 2.035 = 2.5 - 0.465
           continue;
 
-        for (short i = 0; i < nDPhiBins; i++) {
-          if (dPhiBins[i] <= dphi && dphi < dPhiBins[i+1]) {
-            if (trk_pt > 2)
-              trk_dphi_pt_gt2_counts[i] += 1.;
-            else if (trk_pt > 0.5)
-              trk_dphi_pt_lt2_counts[i] += 1.;
+        for (short iDPhi = 0; iDPhi < nDPhiBins; iDPhi++) {
+          if (dPhiBins[iDPhi] <= dphi && dphi < dPhiBins[iDPhi+1]) {
+            for (short iRedPth = 0; iRedPth < nRedPthBins; iRedPth++) {
+              if (redPthBins[iRedPth] <= trk_pt && trk_pt < redPthBins[iRedPth+1]) {
+                trk_dphi_counts[iRedPth][iDPhi]++;
+                break;
+              }
+            }
             break;
           }
         }
 
-
-        for (short i = 0; i < nPthBins; i++) {
-          if (pthBins[i] <= trk_pt && trk_pt < pthBins[i+1]) {
+        for (short iPth = 0; iPth < nPthBins; iPth++) {
+          if (pthBins[iPth] <= trk_pt && trk_pt < pthBins[iPth+1]) {
             if (dphi >= 7.*M_PI/8.)
-              trk_pt_ns_counts[i] += 1.;
+              trk_pt_counts[0][iPth]++;
             else if (dphi < M_PI/8.)
-              trk_pt_as_counts[i] += 1.;
+              trk_pt_counts[2][iPth]++;
+            else if (M_PI/3. < dphi && dphi < 2.*M_PI/3.)
+              trk_pt_counts[1][iPth]++;
             break;
           }
         }
       } // end loop over iPart
 
-      nJetEvents += jwgt;
-      sumWgtsJetEvents += ewgt*jwgt;
-      sumWgtsSqJetEvents += ewgt*ewgt*jwgt;
-
-      TH1D* h = nullptr;
-      TH2D* h2 = nullptr;
-      double* arr = nullptr;
-
-      h = h_trk_pt_ns_yield;
-      h2 = h2_trk_pt_ns_cov;
-      arr = trk_pt_ns_counts;
-      for (short iX = 0; iX < nPthBins; iX++) {
-        h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (ewgt * jwgt) * arr[iX]);
-        for (short iY = 0; iY < nPthBins; iY++)
-          h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (ewgt * jwgt) * (arr[iX])*(arr[iY]));
-      }
-
-      h = h_trk_pt_as_yield;
-      h2 = h2_trk_pt_as_cov;
-      arr = trk_pt_as_counts;
-      for (short iX = 0; iX < nPthBins; iX++) {
-        h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (ewgt * jwgt) * arr[iX]);
-        for (short iY = 0; iY < nPthBins; iY++)
-          h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (ewgt * jwgt) * (arr[iX])*(arr[iY]));
-      }
-
-      h = h_trk_dphi_pt_gt2_yield;
-      h2 = h2_trk_dphi_pt_gt2_cov;
-      arr = trk_dphi_pt_gt2_counts;
-      for (short iX = 0; iX < nDPhiBins; iX++) {
-        h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (ewgt * jwgt) * arr[iX]);
-        for (short iY = 0; iY < nDPhiBins; iY++)
-          h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) +(ewgt * jwgt) *  (arr[iX])*(arr[iY]));
-      }
-
-      h = h_trk_dphi_pt_lt2_yield;
-      h2 = h2_trk_dphi_pt_lt2_cov;
-      arr = trk_dphi_pt_lt2_counts;
-      for (short iX = 0; iX < nDPhiBins; iX++) {
-        h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (ewgt * jwgt) * arr[iX]);
-        for (short iY = 0; iY < nDPhiBins; iY++)
-          h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (ewgt * jwgt) * (arr[iX])*(arr[iY]));
-      }
-
-      for (int i = 0; i < nPthBins; i++) {
-        trk_pt_ns_counts[i] = 0;
-        trk_pt_as_counts[i] = 0;
-      }
-      for (int i = 0; i < nDPhiBins; i++) {
-        trk_dphi_pt_gt2_counts[i] = 0;
-        trk_dphi_pt_lt2_counts[i] = 0;
-      }
-
     } // end loop over jets
+
+
+    TH1D* h = nullptr;
+    TH2D* h2 = nullptr;
+    int* arr = nullptr;
+
+    if (jetCount > 0) {
+      n_evts[iCent]++;
+
+      for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
+        h = h_trk_pt_yield[iDPhi][iCent];
+        h2 = h2_trk_pt_cov[iDPhi][iCent];
+        arr = trk_pt_counts[iDPhi];
+        for (short iX = 0; iX < h->GetNbinsX (); iX++) {
+          h->SetBinContent (iX+1, h->GetBinContent (iX+1) + ((double)arr[iX]) / jetCount);
+          for (short iY = 0; iY < h->GetNbinsX (); iY++)
+            h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + ((double)(arr[iX])*(arr[iY]))/(jetCount*jetCount));
+        }
+      }
+  
+      for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++) {
+        h = h_trk_dphi_yield[iRedPth][iCent];
+        h2 = h2_trk_dphi_cov[iRedPth][iCent];
+        arr = trk_dphi_counts[iRedPth];
+        for (short iX = 0; iX < h->GetNbinsX (); iX++) {
+          h->SetBinContent (iX+1, h->GetBinContent (iX+1) + ((double)arr[iX]));
+          for (short iY = 0; iY < h->GetNbinsX (); iY++)
+            h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + ((double)(arr[iX])*(arr[iY]))/(jetCount*jetCount));
+        }
+      }
+
+      for (int iDPhi = 0; iDPhi < 3; iDPhi++)
+        for (int iPth = 0; iPth < nPthBins; iPth++)
+          trk_pt_counts[iDPhi][iPth] = 0;
+  
+      for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++)
+        for (int iDPhi = 0; iDPhi < nDPhiBins; iDPhi++)
+          trk_dphi_counts[iRedPth][iDPhi] = 0;
+    }
 
   } // end loop over iEvent
 
+  std::cout << std::endl;
 
 
-  std::cout << "nJetEvents =         " << nJetEvents << std::endl;
-  std::cout << "sumWgtsJetEvents =   " << sumWgtsJetEvents << std::endl;
-  std::cout << "sumWgtsSqJetEvents = " << sumWgtsSqJetEvents << std::endl;
+
+  std::cout << "n_evts = ";
+  for (int iCent = 0; iCent < nCentBins-1; iCent++)  std::cout << n_evts[iCent] << ", " << std::endl;
+  std::cout << n_evts[nCentBins-1] << std::endl;
 
   {
     TH2D* h2 = nullptr;
     TH1D* h = nullptr;
 
-    h2 = h2_trk_pt_ns_cov;
-    h = h_trk_pt_ns_yield;
-    ScaleHist (h, 8./M_PI, true);
-    ScaleHist (h2, std::pow (8./M_PI, 2.), true);
-    for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
-      for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
-        h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/sumWgtsJetEvents);
-    ScaleHist (h, 1./sumWgtsJetEvents, false);
-    ScaleHist (h2, sumWgtsJetEvents / (nJetEvents * (sumWgtsJetEvents*sumWgtsJetEvents - sumWgtsSqJetEvents)), false);
-    SetVariances (h, h2);
+    for (int iCent = 0; iCent < nCentBins; iCent++) {
+
+      const float n_evt = (float) n_evts[iCent];
+
+      for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
+        h2 = h2_trk_pt_cov[iDPhi][iCent];
+        h = h_trk_pt_yield[iDPhi][iCent];
+        ScaleHist (h, iDPhi % 2 == 0 ? 8./M_PI : 3./M_PI, true);
+        ScaleHist (h2, std::pow (iDPhi % 2 == 0  ? 8./M_PI : 3./M_PI, 2.), true);
+        for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
+          for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
+            h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/n_evt);
+        ScaleHist (h, 1./n_evt, false);
+        ScaleHist (h2, 1./(n_evt*(n_evt-1)), false);
+        SetVariances (h, h2);
+      }
 
 
-    h2 = h2_trk_pt_as_cov;
-    h = h_trk_pt_as_yield;
-    ScaleHist (h, 8./M_PI, true);
-    ScaleHist (h2, std::pow (8./M_PI, 2.), true);
-    for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
-      for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
-        h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/sumWgtsJetEvents);
-    ScaleHist (h, 1./sumWgtsJetEvents, false);
-    ScaleHist (h2, sumWgtsJetEvents / (nJetEvents * (sumWgtsJetEvents*sumWgtsJetEvents - sumWgtsSqJetEvents)), false);
-    SetVariances (h, h2);
-
-
-    h2 = h2_trk_dphi_pt_gt2_cov;
-    h = h_trk_dphi_pt_gt2_yield;
-    for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
-      for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
-        h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/sumWgtsJetEvents);
-    ScaleHist (h, 1./sumWgtsJetEvents, true);
-    ScaleHist (h2, sumWgtsJetEvents / (nJetEvents * (sumWgtsJetEvents*sumWgtsJetEvents - sumWgtsSqJetEvents)), true);
-    SetVariances (h, h2);
-
-
-    h2 = h2_trk_dphi_pt_lt2_cov;
-    h = h_trk_dphi_pt_lt2_yield;
-    for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
-      for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
-        h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/sumWgtsEvents);
-    ScaleHist (h, 1./sumWgtsEvents, true);
-    ScaleHist (h2, sumWgtsEvents / (nEvents * (sumWgtsEvents*sumWgtsEvents - sumWgtsSqEvents)), true);
-    SetVariances (h, h2);
+      for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++) {
+        h2 = h2_trk_dphi_cov[iRedPth][iCent];
+        h = h_trk_dphi_yield[iRedPth][iCent];
+        for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
+          for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
+            h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/n_evt);
+        ScaleHist (h, 1./n_evt, true);
+        ScaleHist (h2, 1./(n_evt*(n_evt-1)), true);
+        SetVariances (h, h2);
+      }
+    }
 
   }
 
-  delete[] trk_pt_ns_counts;
-  trk_pt_ns_counts = nullptr;
-  delete[] trk_pt_as_counts;
-  trk_pt_as_counts = nullptr;
-  delete[] trk_dphi_pt_gt2_counts;
-  trk_dphi_pt_gt2_counts = nullptr;
-  delete[] trk_dphi_pt_lt2_counts;
-  trk_dphi_pt_lt2_counts = nullptr;
 
-  outFile->cd ();
 
   // now save histograms to a rootfile
-  h_trk_pt_ns_yield->Write ();
-  h2_trk_pt_ns_cov->Write ();
-  h_trk_pt_as_yield->Write ();
-  h2_trk_pt_as_cov->Write ();
-  h_trk_dphi_pt_gt2_yield->Write ();
-  h2_trk_dphi_pt_gt2_cov->Write ();
-  h_trk_dphi_pt_lt2_yield->Write ();
-  h2_trk_dphi_pt_lt2_cov->Write ();
+  outFile->cd ();
+
+  for (int iCent = 0; iCent < nCentBins; iCent++) {
+    for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
+      h_trk_pt_yield[iDPhi][iCent]->Write ();
+      h2_trk_pt_cov[iDPhi][iCent]->Write ();
+    }
+    for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++) {
+      h_trk_dphi_yield[iRedPth][iCent]->Write ();
+      h2_trk_dphi_cov[iRedPth][iCent]->Write ();
+    }
+  }
   
   outFile->Close ();
 

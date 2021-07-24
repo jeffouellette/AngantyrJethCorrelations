@@ -2,4 +2,4 @@ bin
 errors
 outputs
 rootFiles/*/gen*
-
+Plots/
