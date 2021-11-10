@@ -163,13 +163,13 @@ int main () {
     const std::string dphiStr = (iDPhi == 0 ? "ns" : (iDPhi == 1 ? "perp" : "as"));
 
     h_trk_pt_yield_pp_sig[iDPhi] = (TH1D*) h_trk_pt_yield_pp[iDPhi]->Clone (Form ("h_trk_pt_%s_pp_sig", dphiStr.c_str ()));
-    h_trk_pt_yield_pp_sig[iDPhi]->Add (h_trk_pt_yield_pp_bkg[iDPhi], -1);
+    //h_trk_pt_yield_pp_sig[iDPhi]->Add (h_trk_pt_yield_pp_bkg[iDPhi], -1);
 
     for (int iCent = 0; iCent < nCentBins; iCent++) {
       const std::string centStr = Form ("cent%i", iCent);
 
       h_trk_pt_yield_pPb_sig[iDPhi][iCent] = (TH1D*) h_trk_pt_yield_pPb[iDPhi][iCent]->Clone (Form ("h_trk_pt_%s_cent%i_pPb_sig", dphiStr.c_str (), iCent));
-      h_trk_pt_yield_pPb_sig[iDPhi][iCent]->Add (h_trk_pt_yield_pPb_bkg[iDPhi][iCent], -1);
+      //h_trk_pt_yield_pPb_sig[iDPhi][iCent]->Add (h_trk_pt_yield_pPb_bkg[iDPhi][iCent], -1);
 
       h_trk_pt_yield_ratio[iDPhi][iCent] = (TH1D*) h_trk_pt_yield_pPb_sig[iDPhi][iCent]->Clone (Form ("h_trk_pt_%s_cent%i_ratio", dphiStr.c_str (), iCent));
       h_trk_pt_yield_ratio[iDPhi][iCent]->Divide (h_trk_pt_yield_pp_sig[iDPhi]);
@@ -180,13 +180,13 @@ int main () {
     const std::string pthStr = GetRedPthStr (iPth);
 
     h_trk_dphi_yield_pp_sig[iPth] = (TH1D*) h_trk_dphi_yield_pp[iPth]->Clone (Form ("h_trk_dphi_%s_pp_sig", pthStr.c_str ()));
-    h_trk_dphi_yield_pp_sig[iPth]->Add (h_trk_dphi_yield_pp_bkg[iPth], -1);
+    //h_trk_dphi_yield_pp_sig[iPth]->Add (h_trk_dphi_yield_pp_bkg[iPth], -1);
 
     for (int iCent = 0; iCent < nCentBins; iCent++) {
       const std::string centStr = Form ("cent%i", iCent);
 
       h_trk_dphi_yield_pPb_sig[iPth][iCent] = (TH1D*) h_trk_dphi_yield_pPb[iPth][iCent]->Clone (Form ("h_trk_dphi_%s_cent%i_pPb_sig", pthStr.c_str (), iCent));
-      h_trk_dphi_yield_pPb_sig[iPth][iCent]->Add (h_trk_dphi_yield_pPb_bkg[iPth][iCent], -1);
+      //h_trk_dphi_yield_pPb_sig[iPth][iCent]->Add (h_trk_dphi_yield_pPb_bkg[iPth][iCent], -1);
 
       h_trk_dphi_yield_ratio[iPth][iCent] = (TH1D*) h_trk_dphi_yield_pPb_sig[iPth][iCent]->Clone (Form ("h_trk_dphi_%s_cent%i_ratio", pthStr.c_str (), iCent));
       h_trk_dphi_yield_ratio[iPth][iCent]->Divide (h_trk_dphi_yield_pp_sig[iPth]);

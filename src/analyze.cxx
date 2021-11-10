@@ -124,7 +124,8 @@ int main (int argc, char** argv) {
   int** trk_dphi_counts = Get2DArray <int> (nRedPthBins, nDPhiBins);
   int* jet_ptj_counts = Get1DArray <int> (nPtJBins);
 
-  int* n_evts = Get1DArray <int> (nCentBins); // number of events used at each centrallity
+  //int* n_evts = Get1DArray <int> (nCentBins); // number of events used at each centrallity
+  int* n_jets = Get1DArray <int> (nCentBins); // number of jets sampled at each centrallity
 
   for (int iDPhi = 0; iDPhi < 3; iDPhi++)
     for (int iPth = 0; iPth < nPthBins; iPth++)
@@ -200,8 +201,8 @@ int main (int argc, char** argv) {
     //if (ispPb && ncoll < minNcoll)
     //  continue;
 
-    int jetCount = 0;
-
+    bool takeEvent = false;
+    int jets = 0;
     for (int iJ = 0; iJ < akt4_jet_n; iJ++) {
       const float jpt = akt4_jet_pt[iJ];
       const float jeta = akt4_jet_eta[iJ];
@@ -220,7 +221,9 @@ int main (int argc, char** argv) {
       if (jpt < 60)
         continue;
 
-      jetCount++;
+      takeEvent = true; 
+      n_jets[iCent]++;
+      jets++;
 
       // now loop over the particles in the recorded event
       for (int iPart = 0; iPart < part_n; iPart++) {
@@ -249,12 +252,12 @@ int main (int argc, char** argv) {
 
         for (short iPth = 0; iPth < nPthBins; iPth++) {
           if (pthBins[iPth] <= trk_pt && trk_pt < pthBins[iPth+1]) {
-            if (dphi >= 7.*M_PI/8.)
+            if (dphi <= M_PI/8.)
               trk_pt_counts[0][iPth]++;
-            else if (dphi < M_PI/8.)
-              trk_pt_counts[2][iPth]++;
             else if (M_PI/3. < dphi && dphi < 2.*M_PI/3.)
               trk_pt_counts[1][iPth]++;
+            else if (dphi >= 7.*M_PI/8.)
+              trk_pt_counts[2][iPth]++;
             break;
           }
         }
@@ -267,30 +270,33 @@ int main (int argc, char** argv) {
     TH2D* h2 = nullptr;
     int* arr = nullptr;
 
-    if (jetCount > 0) {
-      n_evts[iCent]++;
+    if (takeEvent) {
 
       for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
         h = h_trk_pt_yield[iDPhi][iCent];
         h2 = h2_trk_pt_cov[iDPhi][iCent];
         arr = trk_pt_counts[iDPhi];
+        for (short iX = 0; iX < h->GetNbinsX (); iX++)
+          arr[iX] = arr[iX] / jets;
         for (short iX = 0; iX < h->GetNbinsX (); iX++) {
-          h->SetBinContent (iX+1, h->GetBinContent (iX+1) + ((double)arr[iX]) / jetCount);
+          h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (jets)*(arr[iX]));
           for (short iY = 0; iY < h->GetNbinsX (); iY++)
-            h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + ((double)(arr[iX])*(arr[iY]))/(jetCount*jetCount));
-        }
-      }
+            h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (jets)*(arr[iX])*(arr[iY]));
+        } // end loop over iX
+      } // end loop over iDPhi
 
       for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++) {
         h = h_trk_dphi_yield[iRedPth][iCent];
         h2 = h2_trk_dphi_cov[iRedPth][iCent];
         arr = trk_dphi_counts[iRedPth];
+        for (short iX = 0; iX < h->GetNbinsX (); iX++)
+          arr[iX] = arr[iX] / jets;
         for (short iX = 0; iX < h->GetNbinsX (); iX++) {
-          h->SetBinContent (iX+1, h->GetBinContent (iX+1) + ((double)arr[iX]) / jetCount);
+          h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (jets)*(arr[iX]));
           for (short iY = 0; iY < h->GetNbinsX (); iY++)
-            h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + ((double)(arr[iX])*(arr[iY]))/(jetCount*jetCount));
-        }
-      }
+            h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (jets)*(arr[iX])*(arr[iY]));
+        } // end loop over iX
+      } // end loop over iRedPth
 
       for (int iDPhi = 0; iDPhi < 3; iDPhi++)
         for (int iPth = 0; iPth < nPthBins; iPth++)
@@ -306,17 +312,16 @@ int main (int argc, char** argv) {
       h2 = h2_jet_pt_cov[iCent];
       arr = jet_ptj_counts;
       for (int iX = 0; iX < h->GetNbinsX (); iX++) {
-        h->SetBinContent (iX+1, h->GetBinContent (iX+1) + (double)arr[iX]);
+        h->SetBinContent (iX+1, h->GetBinContent (iX+1) + arr[iX]);
         for (int iY = 0; iY < h->GetNbinsX (); iY++)
-          h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (double)(arr[iX])*(arr[iY]));
-      }
+          h2->SetBinContent (iX+1, iY+1, h2->GetBinContent (iX+1, iY+1) + (arr[iX])*(arr[iY]));
+      } // end loop over iX
     }
 
-    for (int i = 0; i < nPtJBins; i++) {
+    for (int i = 0; i < nPtJBins; i++)
       jet_ptj_counts[i] = 0;
-    }
 
-    h_jet_yield[iCent]->Fill (jetCount);
+    h_jet_yield[iCent]->Fill (jets);
 
   } // end loop over iEvent
 
@@ -324,9 +329,9 @@ int main (int argc, char** argv) {
 
 
 
-  std::cout << "n_evts = ";
-  for (int iCent = 0; iCent < nCentBins-1; iCent++)  std::cout << n_evts[iCent] << ", " << std::endl;
-  std::cout << n_evts[nCentBins-1] << std::endl;
+  std::cout << "n_jets = ";
+  for (int iCent = 0; iCent < nCentBins-1; iCent++)  std::cout << n_jets[iCent] << ", " << std::endl;
+  std::cout << n_jets[nCentBins-1] << std::endl;
 
   {
     TH2D* h2 = nullptr;
@@ -334,31 +339,35 @@ int main (int argc, char** argv) {
 
     for (int iCent = 0; iCent < nCentBins; iCent++) {
 
-      const float n_evt = (float) n_evts[iCent];
+      const float n = (float) n_jets[iCent];
 
       for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
         h2 = h2_trk_pt_cov[iDPhi][iCent];
         h = h_trk_pt_yield[iDPhi][iCent];
-        ScaleHist (h, iDPhi % 2 == 0 ? 8./M_PI : 3./M_PI, true);
-        ScaleHist (h2, std::pow (iDPhi % 2 == 0  ? 8./M_PI : 3./M_PI, 2.), true);
-        for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
-          for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
-            h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/n_evt);
-        ScaleHist (h, 1./n_evt, false);
-        ScaleHist (h2, 1./(n_evt*(n_evt-1)), false);
-        SetVariances (h, h2);
+        CalcUncertainties (h, h2, n);
+        for (int iX = 1; iX <= h->GetNbinsX (); iX++) {
+          h->SetBinContent (iX, h->GetBinContent (iX) / h->GetBinWidth (iX));
+          h->SetBinError   (iX, h->GetBinError   (iX) / h->GetBinWidth (iX));
+          for (int iY = 1; iY <= h->GetNbinsX (); iY++) {
+            h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) / (h2->GetXaxis ()->GetBinWidth (iX) * h2->GetYaxis ()->GetBinWidth (iY)));
+            h2->SetBinError   (iX, iY, h2->GetBinError   (iX, iY) / (h2->GetXaxis ()->GetBinWidth (iX) * h2->GetYaxis ()->GetBinWidth (iY)));
+          } // end loop over iY
+        } // end loop over iX
       }
 
 
       for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++) {
         h2 = h2_trk_dphi_cov[iRedPth][iCent];
         h = h_trk_dphi_yield[iRedPth][iCent];
-        for (int iX = 1; iX <= h2->GetNbinsX (); iX++)
-          for (int iY = 1; iY <= h2->GetNbinsY (); iY++)
-            h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) - (h->GetBinContent (iX))*(h->GetBinContent (iY))/n_evt);
-        ScaleHist (h, 1./n_evt, true);
-        ScaleHist (h2, 1./(n_evt*(n_evt-1)), true);
-        SetVariances (h, h2);
+        CalcUncertainties (h, h2, n);
+        for (int iX = 1; iX <= h->GetNbinsX (); iX++) {
+          h->SetBinContent (iX, h->GetBinContent (iX) / h->GetBinWidth (iX));
+          h->SetBinError   (iX, h->GetBinError   (iX) / h->GetBinWidth (iX));
+          for (int iY = 1; iY <= h->GetNbinsX (); iY++) {
+            h2->SetBinContent (iX, iY, h2->GetBinContent (iX, iY) / (h2->GetXaxis ()->GetBinWidth (iX) * h2->GetYaxis ()->GetBinWidth (iY)));
+            h2->SetBinError   (iX, iY, h2->GetBinError   (iX, iY) / (h2->GetXaxis ()->GetBinWidth (iX) * h2->GetYaxis ()->GetBinWidth (iY)));
+          } // end loop over iY
+        } // end loop over iX
       }
     }
 

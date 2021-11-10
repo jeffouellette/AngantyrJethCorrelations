@@ -148,11 +148,10 @@ int main () {
     float ymin = 2e-6;
     float ymax = 300;
 
-    h = new TH1D ("htemp", "", 1, pthBins[0], pthBins[nPthBins]);
+    h = new TH1D ("htemp", ";#it{p}_{T}^{ch} [GeV];#frac{1}{N_{jet}} #frac{d^{2}N_{ch}}{d#it{p}_{T}^{ch}} [GeV^{-1}]", 1, pthBins[0], pthBins[nPthBins]);
     h->GetYaxis ()->SetRangeUser (ymin, ymax);
     h->GetXaxis ()->SetTitleSize (0);
     h->GetXaxis ()->SetLabelSize (0);
-    h->GetYaxis ()->SetTitle ("#frac{1}{N_{jet}} #frac{d^{2}N_{ch}}{d#it{p}_{T}^{ch} d#Delta#phi_{ch,jet}} [GeV^{-1}]");
     h->GetYaxis ()->SetTitleSize (0.03/0.7);
     h->GetYaxis ()->SetLabelSize (0.03/0.7);
     h->GetYaxis ()->SetTitleOffset (2.3*0.7);
@@ -163,17 +162,17 @@ int main () {
 
     myDraw (h_trk_pt_yield_pPb[iDPhi][cent], myCyan, kFullCircle, 0.8);
     myDraw (h_trk_pt_yield_pp[iDPhi], myPurple, kFullCircle, 0.8);
-    myDraw (h_trk_pt_yield_pPb_bkg[iDPhi][cent], myRed, kFullCircle, 0.8);
-    myDraw (h_trk_pt_yield_pp_bkg[iDPhi], myBlue, kFullCircle, 0.8);
+    //myDraw (h_trk_pt_yield_pPb_bkg[iDPhi][cent], myRed, kFullCircle, 0.8);
+    //myDraw (h_trk_pt_yield_pp_bkg[iDPhi], myBlue, kFullCircle, 0.8);
 
     myText (0.550, 0.880, kBlack, "#bf{Pythia 8.306} Angantyr", 0.028/0.7);
     
-    myText (0.550, 0.830, kBlack, "Signal:", 0.024/0.7);
+    //myText (0.550, 0.830, kBlack, "Signal:", 0.024/0.7);
     myText (0.590, 0.780, kBlack, "HardQCD:all = #bf{on}", 0.024/0.7);
     myText (0.590, 0.740, kBlack, "MPI:allowRescatter = #bf{on}", 0.024/0.7);
-    myText (0.550, 0.700, kBlack, "Background:", 0.024/0.7);
-    myText (0.590, 0.660, kBlack, "SoftQCD:nondiffractive = #bf{on}", 0.024/0.7);
-    myText (0.590, 0.620, kBlack, "MPI:allowRescatter = #bf{off}", 0.024/0.7);
+    //myText (0.550, 0.700, kBlack, "Background:", 0.024/0.7);
+    //myText (0.590, 0.660, kBlack, "SoftQCD:nondiffractive = #bf{on}", 0.024/0.7);
+    //myText (0.590, 0.620, kBlack, "MPI:allowRescatter = #bf{off}", 0.024/0.7);
     myText (0.220, 0.230, kBlack, "#it{p}+Pb #bf{0-20\%}, #sqrt{s_{NN}} = 5.02 TeV", 0.028/0.7);
     myText (0.220, 0.180, kBlack, "#it{pp}, #sqrt{s} = 5.02 TeV", 0.028/0.7);
     myText (0.220, 0.130, kBlack, "anti-#it{k}_{T} R=0.4 jets, #it{p}_{T}^{jet} > 60 GeV", 0.028/0.7);      
@@ -181,9 +180,9 @@ int main () {
     myText (0.220, 0.080, kBlack, Form ("Charged hadrons, %s", dphiDescStr.c_str ()), 0.028/0.7);
 
     myLineText2 (0.270, 0.450, myCyan, kFullCircle, "#it{p}+Pb total", 1.0, 0.028/0.7, true);
-    myLineText2 (0.270, 0.400, myRed, kFullCircle, "#it{p}+Pb bkgd.", 1.0, 0.028/0.7, true);
-    myLineText2 (0.270, 0.350, myPurple, kFullCircle, "#it{pp} total", 1.0, 0.028/0.7, true);
-    myLineText2 (0.270, 0.300, myBlue, kFullCircle, "#it{pp} bkgd.", 1.0, 0.028/0.7, true);
+    //myLineText2 (0.270, 0.400, myRed, kFullCircle, "#it{p}+Pb bkgd.", 1.0, 0.028/0.7, true);
+    myLineText2 (0.270, 0.400, myPurple, kFullCircle, "#it{pp} total", 1.0, 0.028/0.7, true);
+    //myLineText2 (0.270, 0.300, myBlue, kFullCircle, "#it{pp} bkgd.", 1.0, 0.028/0.7, true);
 
 
     dPad->cd (); 
@@ -192,15 +191,12 @@ int main () {
     ymin = 0.6;
     ymax = 1.4;
 
-    h = new TH1D ("htemp", "", 1, pthBins[0], pthBins[nPthBins]);
+    h = new TH1D ("htemp", ";#it{p}_{T}^{ch} [GeV];#it{I}_{#it{p}Pb}", 1, pthBins[0], pthBins[nPthBins]);
     for (int i = 1; i <= h->GetNbinsX (); i++) h->SetBinContent (i, 1);
     h->GetYaxis ()->SetRangeUser (ymin, ymax);
-    h->GetXaxis ()->SetTitle ("#it{p}_{T}^{ch} [GeV]");
     h->GetXaxis ()->SetTitleSize (0.04/0.3);
     h->GetXaxis ()->SetLabelSize (0.04/0.3);
     h->GetXaxis ()->SetTitleOffset (3.0*0.3);
-    //h->GetXaxis ()->SetLabelOffset (-0.04*0.3);
-    h->GetYaxis ()->SetTitle (Form ("#frac{#color[%i]{N_{tot}^{p+Pb}} #minus #color[%i]{N_{bkgd}^{p+Pb}}}{#color[%i]{N_{tot}^{pp}} #minus #color[%i]{N_{bkgd}^{pp}}}", (int)myCyan, (int)myRed, (int)myPurple, (int)myBlue));
     h->GetYaxis ()->SetTitleSize (0.03/0.3);
     h->GetYaxis ()->SetLabelSize (0.03/0.3);
     h->GetYaxis ()->SetTitleOffset (2.3*0.3);

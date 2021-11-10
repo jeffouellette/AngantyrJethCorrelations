@@ -9,13 +9,13 @@ accounting_group = group_atlas.boulder
 
 Executable = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations/bin/analyze
 
-Arguments = pp rootFiles/pp/gen_job*.root rootFiles/pp/hists.root
+Arguments = pp rootFiles/pp/gen_HardQCD_pTHat50_allowRescatter_job*.root rootFiles/pp/hists.root
 Log = logs/pp_analyze.log
 Output = outputs/pp_analyze.out
 Error = errors/pp_analyze.err
 Queue 1
 
-Arguments = pPb rootFiles/pPb/gen_job*.root rootFiles/pPb/hists.root
+Arguments = pPb rootFiles/pPb/gen_HardQCD_pTHat50_allowRescatter_job*.root rootFiles/pPb/hists.root
 Log = logs/pPb_analyze.log
 Output = outputs/pPb_analyze.out
 Error = errors/pPb_analyze.err
