@@ -7,6 +7,13 @@
 
 #include <sstream>
 
+#include "fastjet/PseudoJet.hh"
+#include "fastjet/ClusterSequenceArea.hh"
+#include "fastjet/Selector.hh"
+
+#include "fastjet/tools/JetMedianBackgroundEstimator.hh"
+#include "fastjet/tools/Subtractor.hh"
+
 #include "fastjet/ClusterSequence.hh"
 
 #include "Pythia8/Pythia.h"
@@ -57,8 +64,8 @@ int main (int argc, char** argv) {
   pythia.readString (Form ("Beams:eB = %g", eB));
 
   // turn on Angantyr (instead of default Pythia)
-  pythia.readString ("HeavyIon:mode = 2");
-  pythia.readString ("HeavyIon:SigFitNGen = 0");
+  pythia.readString ("HeavyIon:mode = 1");
+  pythia.readString ("HeavyIon:SigFitNGen = 0"); // these two lines speed up the Angantyr initialization I guess?? (The program tells you to write them in)
   pythia.readString ("HeavyIon:SigFitDefPar = 13.91,1.78,0.22,0.0,0.0,0.0,0.0,0.0");
 
   // read process configuration from file (e.g. MPI, HardQCD, SoftQCD, electroweak...)
@@ -170,8 +177,12 @@ int main (int argc, char** argv) {
   outTree->Branch ("gap_negEta",  &b_gap_negEta,  "gap_negEta/F");
   outTree->Branch ("gap_posEta",  &b_gap_posEta,  "gap_posEta/F");
 
-  std::vector <fastjet::PseudoJet> particles;
+  std::vector <fastjet::PseudoJet> particles, hard_event, full_event;
   int* nPartEta = new int[98];
+
+  const float ptmin = 50;
+
+  const bool debugfastjet = false;
 
   for (int iEvent = 0; iEvent < nEvents; iEvent++) {
     if (nEvents > 100 && iEvent % (nEvents / 100) == 0)
@@ -181,6 +192,8 @@ int main (int argc, char** argv) {
       continue;
 
     particles.clear ();
+    hard_event.clear ();
+    full_event.clear ();
 
     b_firesMBTrigger = false;
     b_part_n = 0;
@@ -203,8 +216,11 @@ int main (int argc, char** argv) {
           nPartEta[iEta]++;
       }
 
-      if (std::abs (pythia.event[i].id ()) != 13) // exclude muons from jet clustering
+      if (std::abs (pythia.event[i].id ()) != 13) { // exclude muons from jet clustering
         particles.push_back (fastjet::PseudoJet (pythia.event[i].px (), pythia.event[i].py (), pythia.event[i].pz (), pythia.event[i].e ()));
+        hard_event.push_back (fastjet::PseudoJet (pythia.event[i].px (), pythia.event[i].py (), pythia.event[i].pz (), pythia.event[i].e ()));
+        full_event.push_back (fastjet::PseudoJet (pythia.event[i].px (), pythia.event[i].py (), pythia.event[i].pz (), pythia.event[i].e ()));
+      }
 
       if (-4.9 < pythia.event[i].eta () && pythia.event[i].eta () < -3.2)
         b_fcal_et_negEta += std::sqrt (std::pow (pythia.event[i].e (), 2) - std::pow (pythia.event[i].pT () * std::sinh (pythia.event[i].eta ()), 2)); // add particle E_T
@@ -245,12 +261,166 @@ int main (int argc, char** argv) {
     b_gap_posEta = (97-iEta)*0.1;
 
 
-    // now run jet clustering
-    fastjet::ClusterSequence clusterSeqAkt2Jets (particles, antiKt2);
-    std::vector <fastjet::PseudoJet> sortedAkt2Jets = fastjet::sorted_by_pt (clusterSeqAkt2Jets.inclusive_jets ());
+    //==================================================================================================
+    // NOW TRY JETS WITH UNDERLYING EVENT SUBTRACTION (SEE 07-subtraction.cc from FastJet Examples)
+    //==================================================================================================
+
+    // create an area definition for the clustering
+    //----------------------------------------------------------
+    // ghosts should go up to the acceptance of the detector or
+    // (with infinite acceptance) at least 2R beyond the region
+    // where you plan to investigate jets.
+    double ghost_maxrap = 6.0;
+    double particle_maxrap = 5.0;
+    
+    fastjet::GhostedAreaSpec area_spec (ghost_maxrap);
+    fastjet::AreaDefinition area_def (fastjet::active_area, area_spec);
+    
+    // run the jet clustering with the above jet and area definitions
+    // for both the hard and full event
+    //
+    // We retrieve the jets above 5 GeV in both case (note that the
+    // 5-GeV cut we be applied again later on after we subtract the jets
+    // from the full event)
+    // ----------------------------------------------------------
+    fastjet::ClusterSequenceArea clusterSeqAkt2Jets (particles, antiKt2, area_def);
+    std::vector <fastjet::PseudoJet> sortedAkt2Jets = fastjet::sorted_by_pt (clusterSeqAkt2Jets.inclusive_jets (ptmin));
+
+    fastjet::ClusterSequenceArea clusterSeqAkt4Jets (particles, antiKt4, area_def);
+    std::vector <fastjet::PseudoJet> sortedAkt4Jets = fastjet::sorted_by_pt (clusterSeqAkt4Jets.inclusive_jets (ptmin));
+
+    //fastjet::ClusterSequenceArea clust_seq_hard (hard_event, fastjet::antiKt4, area_def);
+    //fastjet::ClusterSequenceArea clust_seq_full (full_event, fastjet::antiKt4, area_def);
+    //
+    //std::vector <fastjet::PseudoJet> hard_jets = fastjet::sorted_by_pt (clust_seq_hard.inclusive_jets (ptmin));
+    //std::vector <fastjet::PseudoJet> full_jets = fastjet::sorted_by_pt (clust_seq_full.inclusive_jets (ptmin));
+    std::vector <fastjet::PseudoJet> hard_jets = sortedAkt4Jets;
+    
+    // Now turn to the estimation of the background (for the full event)
+    //
+    // There are different ways to do that. In general, this also
+    // requires clustering the particles that will be handled internally
+    // in FastJet. 
+    //
+    // The suggested way to proceed is to use a BackgroundEstimator
+    // constructed from the following 3 arguments:
+    //  - a jet definition used to cluster the particles.
+    //    . We strongly recommend using the kt or Cambridge/Aachen
+    //      algorithm (a warning will be issued otherwise)
+    //    . The choice of the radius is a bit more subtle. R=0.4 has
+    //      been chosen to limit the impact of hard jets; in samples of
+    //      dominantly sparse events it may cause the UE/pileup to be
+    //      underestimated a little, a slightly larger value (0.5 or
+    //      0.6) may be better.
+    //  - An area definition for which we recommend the use of explicit
+    //    ghosts (i.e. active_area_explicit_ghosts)
+    //    As mentionned in the area example (06-area.cc), ghosts should
+    //    extend sufficiently far in rapidity to cover the jets used in
+    //    the computation of the background (see also the comment below)
+    //  - A Selector specifying the range over which we will keep the
+    //    jets entering the estimation of the background (you should
+    //    thus make sure the ghosts extend far enough in rapidity to
+    //    cover the range, a warning will be issued otherwise).
+    //    In this particular example, the two hardest jets in the event
+    //    are removed from the background estimation
+    // ----------------------------------------------------------
+    fastjet::JetDefinition jet_def_bkgd_kt2 (fastjet::JetAlgorithm::kt_algorithm, 0.2);
+    fastjet::JetDefinition jet_def_bkgd_kt4 (fastjet::JetAlgorithm::kt_algorithm, 0.4);
+
+    fastjet::AreaDefinition area_def_bkgd (fastjet::AreaType::active_area_explicit_ghosts, fastjet::GhostedAreaSpec (ghost_maxrap));
+
+    fastjet::Selector selector = fastjet::SelectorAbsRapMax (4.5) * (!fastjet::SelectorNHardest (2));
+
+    fastjet::JetMedianBackgroundEstimator bkgd_estimator_kt2 (selector, jet_def_bkgd_kt2, area_def_bkgd);
+    fastjet::JetMedianBackgroundEstimator bkgd_estimator_kt4 (selector, jet_def_bkgd_kt4, area_def_bkgd);
+    
+    // To help manipulate the background estimator, we also provide a
+    // transformer that allows to apply directly the background
+    // subtraction on the jets. This will use the background estimator
+    // to compute rho for the jets to be subtracted.
+    // ----------------------------------------------------------
+    fastjet::Subtractor subtractor_kt2 (&bkgd_estimator_kt2);
+    fastjet::Subtractor subtractor_kt4 (&bkgd_estimator_kt4);
+    
+    // since FastJet 3.1.0, rho_m is supported natively in background
+    // estimation (both JetMedianBackgroundEstimator and
+    // GridMedianBackgroundEstimator).
+    //
+    // For backward-compatibility reasons its use is by default switched off
+    // (as is the enforcement of m>0 for the subtracted jets). The
+    // following 2 lines of code switch these on. They are strongly
+    // recommended and should become the default in future versions of
+    // FastJet.
+    //
+    // Note that we also illustrate the use of the
+    // FASTJET_VERSION_NUMBER macro
+    //#if FASTJET_VERSION_NUMBER >= 30100
+    subtractor_kt2.set_use_rho_m (true);
+    subtractor_kt2.set_safe_mass (true);
+    subtractor_kt4.set_use_rho_m (true);
+    subtractor_kt4.set_safe_mass (true);
+    //#endif
+
+      // Finally, once we have an event, we can just tell the background
+    // estimator to use that list of particles
+    // This could be done directly when declaring the background
+    // estimator but the usage below can more easily be accomodated to a
+    // loop over a set of events.
+    // ----------------------------------------------------------
+    bkgd_estimator_kt2.set_particles (full_event);
+    bkgd_estimator_kt4.set_particles (full_event);
+    
+    // show a summary of what was done so far
+    //  - the description of the algorithms, areas and ranges used
+    //  - the background properties
+    //  - the jets in the hard event
+    //----------------------------------------------------------
+    if (debugfastjet) {
+      cout << "Main clustering:" << endl;
+      cout << "  Ran:   " << antiKt4.description () << endl;
+      cout << "  Area:  " << area_def.description () << endl;
+      cout << "  Particles up to |y|=" << particle_maxrap << endl;
+      cout << endl;
+      
+      cout << "Background estimation:" << endl;
+      cout << "  " << bkgd_estimator_kt4.description () << endl << endl;;
+      cout << "  Giving, for the full event" << endl;
+      cout << "    rho     = " << bkgd_estimator_kt4.rho ()   << endl;
+      cout << "    sigma   = " << bkgd_estimator_kt4.sigma () << endl; 
+      cout << "    rho_m   = " << bkgd_estimator_kt4.rho_m ()   << endl;
+      cout << "    sigma_m = " << bkgd_estimator_kt4.sigma_m () << endl; 
+      cout << endl;
+    
+    
+      cout << "Jets above " << ptmin << " GeV in the hard event (" << hard_event.size() << " particles)" << endl;
+      cout << "---------------------------------------\n";
+      printf("%5s %15s %15s %15s %15s %15s\n","jet #", "rapidity", "phi", "pt", "m", "area");
+      for (unsigned int i = 0; i < hard_jets.size(); i++) {
+        printf("%5u %15.8f %15.8f %15.8f %15.8f %15.8f\n", i,
+         hard_jets[i].rap(), hard_jets[i].phi(), hard_jets[i].pt(), hard_jets[i].m(),
+         hard_jets[i].area());
+      }
+      cout << endl;
+      
+      // Once the background properties have been computed, subtraction
+      // can be applied on the jets. Subtraction is performed on the
+      // full 4-vector
+      //
+      // We output the jets before and after subtraction
+      // ----------------------------------------------------------
+      cout << "Jets above " << ptmin << " GeV in the full event (" << full_event.size() << " particles)" << endl;
+      cout << "---------------------------------------\n";
+      printf("%5s %15s %15s %15s %15s %15s %15s %15s %15s %15s\n","jet #", "rapidity", "phi", "pt", "m", "area", "rap_sub", "phi_sub", "pt_sub", "m_sub");
+
+    }
+
+    std::vector<fastjet::PseudoJet> subtractedAkt2Jets = subtractor_kt2 (sortedAkt2Jets);
+    // OLD: unsubtracted jets
+    //fastjet::ClusterSequence clusterSeqAkt2Jets (particles, antiKt4);
+    //std::vector <fastjet::PseudoJet> sortedAkt2Jets = fastjet::sorted_by_pt (clusterSeqAkt2Jets.inclusive_jets ());
 
     b_akt2_jet_n = 0;
-    for (fastjet::PseudoJet jet : sortedAkt2Jets) {
+    for (fastjet::PseudoJet jet : subtractedAkt2Jets) {
       if (b_akt2_jet_n < 1000) {
         b_akt2_jet_pt[b_akt2_jet_n] = jet.perp ();
         b_akt2_jet_eta[b_akt2_jet_n] = jet.pseudorapidity ();
@@ -264,11 +434,14 @@ int main (int argc, char** argv) {
       }
     }
 
-    fastjet::ClusterSequence clusterSeqAkt4Jets (particles, antiKt4);
-    std::vector <fastjet::PseudoJet> sortedAkt4Jets = fastjet::sorted_by_pt (clusterSeqAkt4Jets.inclusive_jets ());
+    std::vector<fastjet::PseudoJet> subtractedAkt4Jets = subtractor_kt4 (sortedAkt4Jets);
+
+    // OLD: unsubtracted jets
+    //fastjet::ClusterSequence clusterSeqAkt4Jets (particles, antiKt4);
+    //std::vector <fastjet::PseudoJet> sortedAkt4Jets = fastjet::sorted_by_pt (clusterSeqAkt4Jets.inclusive_jets ());
 
     b_akt4_jet_n = 0;
-    for (fastjet::PseudoJet jet : sortedAkt4Jets) {
+    for (fastjet::PseudoJet jet : subtractedAkt4Jets) {
       if (b_akt4_jet_n < 1000) {
         b_akt4_jet_pt[b_akt4_jet_n] = jet.perp ();
         b_akt4_jet_eta[b_akt4_jet_n] = jet.pseudorapidity ();
