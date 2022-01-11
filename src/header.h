@@ -15,8 +15,10 @@ const int nRedPthBins = sizeof (redPthBins) / sizeof (redPthBins[0]) - 1;
 
 //const double pthBins[] = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80}; // 60 elements
 //const int nPthBins = sizeof (pthBins) / sizeof (pthBins[0]) - 1;
-const int nPthBins = 60;
-const double* pthBins = logspace (0.2, 90, nPthBins);
+//const int nPthBins = 16;
+//const double* pthBins = logspace (4, 70, nPthBins);
+const double pthBins[] = {4, 5, 6, 8, 10, 13, 20, 40, 70, 100};
+const int nPthBins = sizeof (pthBins) / sizeof (pthBins[0]) - 1;
 
 const short nDPhiBins = 24;
 const double* dPhiBins = linspace (0, M_PI, nDPhiBins);

@@ -6,32 +6,71 @@ InitialDir = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations
 accounting_group = group_atlas.boulder
 
 
+path=/usatlas/scratch/jeff/angantyr
+
 
 Executable = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations/bin/analyze
 
-Arguments = pp rootFiles/pp/gen_HardQCD_pTHat50_allowRescatter_job*.root rootFiles/pp/hists.root
-Log = logs/pp_analyze.log
-Output = outputs/pp_analyze.out
-Error = errors/pp_analyze.err
+Arguments = pp $(path)/rootFiles/pp/gen_HardQCD_pTHat50_allowRescatter_job*.root rootFiles/pp/hists_HardQCD_pTHat50_allowRescatter.root
+Log = /tmp/jeff/logs/pp_HardQCD_pTHat50_allowRescatter_analyze.log
+Output = outputs/pp_HardQCD_pTHat50_allowRescatter_analyze.out
+Error = errors/pp_HardQCD_pTHat50_allowRescatter_analyze.err
 Queue 1
 
-Arguments = pPb rootFiles/pPb/gen_HardQCD_pTHat50_allowRescatter_job*.root rootFiles/pPb/hists.root
-Log = logs/pPb_analyze.log
-Output = outputs/pPb_analyze.out
-Error = errors/pPb_analyze.err
+Arguments = pp $(path)/rootFiles/pp/gen_HardQCD_pTHat50_allowRescatter_job*.root rootFiles/pp/hists_HardQCD_pTHat50_allowRescatter_withNPDF.root
+Log = /tmp/jeff/logs/pp_HardQCD_pTHat50_allowRescatter_withNPDF_analyze.log
+Output = outputs/pp_HardQCD_pTHat50_allowRescatter_withNPDF_analyze.out
+Error = errors/pp_HardQCD_pTHat50_allowRescatter_withNPDF_analyze.err
 Queue 1
+
+Arguments = pPb $(path)/rootFiles/pPb/gen_HardQCD_pTHat50_allowRescatter_job*.root rootFiles/pPb/hists_HardQCD_pTHat50_allowRescatter.root
+Log = /tmp/jeff/logs/pPb_HardQCD_pTHat50_allowRescatter_analyze.log
+Output = outputs/pPb_HardQCD_pTHat50_allowRescatter_analyze.out
+Error = errors/pPb_HardQCD_pTHat50_allowRescatter_analyze.err
+Queue 1
+
+Arguments = pPb $(path)/rootFiles/pPb/gen_HardQCD_pTHat50_allowRescatter_withNPDF_job*.root rootFiles/pPb/hists_HardQCD_pTHat50_allowRescatter_withNPDF.root
+Log = /tmp/jeff/logs/pPb_HardQCD_pTHat50_allowRescatter_withNPDF_analyze.log
+Output = outputs/pPb_HardQCD_pTHat50_allowRescatter_withNPDF_analyze.out
+Error = errors/pPb_HardQCD_pTHat50_allowRescatter_withNPDF_analyze.err
+Queue 1
+
+
+#Arguments = pp $(path)/rootFiles/pp/gen_HardQCD_pTHat50_job*.root rootFiles/pp/hists_HardQCD_pTHat50.root
+#Log = /tmp/jeff/logs/pp_HardQCD_pTHat50_analyze.log
+#Output = outputs/pp_HardQCD_pTHat50_analyze.out
+#Error = errors/pp_HardQCD_pTHat50_analyze.err
+#Queue 1
+#
+#Arguments = pp $(path)/rootFiles/pp/gen_HardQCD_pTHat50_job*.root rootFiles/pp/hists_HardQCD_pTHat50_withNPDF.root
+#Log = /tmp/jeff/logs/pp_HardQCD_pTHat50_withNPDF_analyze.log
+#Output = outputs/pp_HardQCD_pTHat50_withNPDF_analyze.out
+#Error = errors/pp_HardQCD_pTHat50_withNPDF_analyze.err
+#Queue 1
+#
+#Arguments = pPb $(path)/rootFiles/pPb/gen_HardQCD_pTHat50_job*.root rootFiles/pPb/hists_HardQCD_pTHat50.root
+#Log = /tmp/jeff/logs/pPb_HardQCD_pTHat50_analyze.log
+#Output = outputs/pPb_HardQCD_pTHat50_analyze.out
+#Error = errors/pPb_HardQCD_pTHat50_analyze.err
+#Queue 1
+#
+#Arguments = pPb $(path)/rootFiles/pPb/gen_HardQCD_pTHat50_withNPDF_job*.root rootFiles/pPb/hists_HardQCD_pTHat50_withNPDF.root
+#Log = /tmp/jeff/logs/pPb_HardQCD_pTHat50_withNPDF_analyze.log
+#Output = outputs/pPb_HardQCD_pTHat50_withNPDF_analyze.out
+#Error = errors/pPb_HardQCD_pTHat50_withNPDF_analyze.err
+#Queue 1
 
 
 #Executable = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations/bin/mixevent
 #
 #Arguments = pp rootFiles/pp/gen_job*.root rootFiles/pp/gen_bkg_job*.root rootFiles/pp/hists_bkg.root
-#Log = logs/pp_bkg_analyze.log
+#Log = /tmp/jeff/logs/pp_bkg_analyze.log
 #Output = outputs/pp_bkg_analyze.out
 #Error = errors/pp_bkg_analyze.err
 #Queue 1
 #
 #Arguments = pPb rootFiles/pPb/gen_job*.root rootFiles/pPb/gen_bkg_job*.root rootFiles/pPb/hists_bkg.root
-#Log = logs/pPb_bkg_analyze.log
+#Log = /tmp/jeff/logs/pPb_bkg_analyze.log
 #Output = outputs/pPb_bkg_analyze.out
 #Error = errors/pPb_bkg_analyze.err
 #Queue 1
