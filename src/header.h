@@ -7,7 +7,8 @@
 
 namespace PythiaAngantyrStudy {
 
-const TString workPath = TString (std::getenv ("gpfs")) + "/AngantyrJethCorrelations";
+//const TString workPath = TString (std::getenv ("gpfs")) + "/AngantyrJethCorrelations";
+const TString workPath = TString (std::getenv ("ANGANTYR_JETH_PATH"));
 
 
 const double redPthBins[] = {0.5, 1, 1.5, 2, 4, 6, 10, 20, 30, 60};
