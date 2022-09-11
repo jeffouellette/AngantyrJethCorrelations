@@ -180,7 +180,7 @@ int main (int argc, char** argv) {
   std::vector <fastjet::PseudoJet> particles, hard_event, full_event;
   int* nPartEta = new int[98];
 
-  const float ptmin = 50;
+  const float ptmin = 20;
 
   const bool debugfastjet = false;
 
@@ -229,6 +229,9 @@ int main (int argc, char** argv) {
 
       if (std::fabs (pythia.event[i].id ()) < 2.5 && pythia.event[i].pT () > 0.2)
         b_firesMBTrigger = true;
+
+      if (pythia.event[i].pT () < 2)
+        continue; // basic pT cut for my sanity
 
       if (!(pythia.event[i].isCharged ()))
         continue; // check that particle is charged (is not neutral)

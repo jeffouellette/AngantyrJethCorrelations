@@ -6,70 +6,113 @@ InitialDir = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations
 accounting_group = group_atlas.boulder
 
 
+path=/usatlas/scratch/jeff/angantyr
 
 Executable = /atlasgpfs01/usatlas/workarea/jeff/AngantyrJethCorrelations/bin/gen
 
+
 configFile=HardQCD_pTHat50_allowRescatter
 
-Arguments = $(Process) 0 2212 2212 5020 0 100000 aux/$(configFile).config rootFiles/pp/gen_$(configFile)_job$(Process).root
+Arguments = $(Process) 0 2212 2212 5020 0 50000 aux/$(configFile).config $(path)/rootFiles/pp/gen_$(configFile)_job$(Process).root
 Log = /tmp/jeff/logs/pp_gen_$(configFile)_job$(Process).log
 Output = outputs/pp_gen_$(configFile)_job$(Process).out
 Error = errors/pp_gen_$(configFile)_job$(Process).err
-Queue 10
+Queue 50
 
-
-Arguments = $(Process) 1000 1000822080 2212 5020 -0.465 100000 aux/$(configFile).config rootFiles/pPb/gen_$(configFile)_job$(Process).root
+Arguments = $(Process) 1000 1000822080 2212 5020 -0.465 50000 aux/$(configFile).config $(path)/rootFiles/pPb/gen_$(configFile)_job$(Process).root
 Log = /tmp/jeff/logs/pPb_gen_$(configFile)_job$(Process).log
 Output = outputs/pPb_gen_$(configFile)_job$(Process).out
 Error = errors/pPb_gen_$(configFile)_job$(Process).err
-Queue 10
+Queue 50
 
 
 configFile=HardQCD_pTHat50_allowRescatter_withNPDF
 
-Arguments = $(Process) 1000 1000822080 2212 5020 -0.465 100000 aux/$(configFile).config rootFiles/pPb/gen_$(configFile)_job$(Process).root
+Arguments = $(Process) 2000 1000822080 2212 5020 -0.465 50000 aux/$(configFile).config $(path)/rootFiles/pPb/gen_$(configFile)_job$(Process).root
 Log = /tmp/jeff/logs/pPb_gen_$(configFile)_job$(Process).log
 Output = outputs/pPb_gen_$(configFile)_job$(Process).out
 Error = errors/pPb_gen_$(configFile)_job$(Process).err
-Queue 10
+Queue 50
 
-
-
-configFile=HardQCD_pTHat50
-
-Arguments = $(Process) 0 2212 2212 5020 0 100000 aux/$(configFile).config rootFiles/pp/gen_$(configFile)_job$(Process).root
+Arguments = $(Process) 3000 2212 2212 5020 0 50000 aux/$(configFile).config $(path)/rootFiles/pp/gen_$(configFile)_job$(Process).root
 Log = /tmp/jeff/logs/pp_gen_$(configFile)_job$(Process).log
 Output = outputs/pp_gen_$(configFile)_job$(Process).out
 Error = errors/pp_gen_$(configFile)_job$(Process).err
-Queue 10
+Queue 50
 
 
-Arguments = $(Process) 1000 1000822080 2212 5020 -0.465 100000 aux/$(configFile).config rootFiles/pPb/gen_$(configFile)_job$(Process).root
+configFile=HardQCD_pTHat20_allowRescatter
+
+Arguments = $(Process) 0 2212 2212 5020 0 50000 aux/$(configFile).config $(path)/rootFiles/pp/gen_$(configFile)_job$(Process).root
+Log = /tmp/jeff/logs/pp_gen_$(configFile)_job$(Process).log
+Output = outputs/pp_gen_$(configFile)_job$(Process).out
+Error = errors/pp_gen_$(configFile)_job$(Process).err
+Queue 50
+
+Arguments = $(Process) 1000 1000822080 2212 5020 -0.465 50000 aux/$(configFile).config $(path)/rootFiles/pPb/gen_$(configFile)_job$(Process).root
 Log = /tmp/jeff/logs/pPb_gen_$(configFile)_job$(Process).log
 Output = outputs/pPb_gen_$(configFile)_job$(Process).out
 Error = errors/pPb_gen_$(configFile)_job$(Process).err
-Queue 10
+Queue 50
 
 
-configFile=HardQCD_pTHat50_withNPDF
+configFile=HardQCD_pTHat20_allowRescatter_withNPDF
 
-Arguments = $(Process) 1000 1000822080 2212 5020 -0.465 100000 aux/$(configFile).config rootFiles/pPb/gen_$(configFile)_job$(Process).root
+Arguments = $(Process) 2000 1000822080 2212 5020 -0.465 50000 aux/$(configFile).config $(path)/rootFiles/pPb/gen_$(configFile)_job$(Process).root
 Log = /tmp/jeff/logs/pPb_gen_$(configFile)_job$(Process).log
 Output = outputs/pPb_gen_$(configFile)_job$(Process).out
 Error = errors/pPb_gen_$(configFile)_job$(Process).err
-Queue 10
+Queue 50
+
+Arguments = $(Process) 3000 2212 2212 5020 0 50000 aux/$(configFile).config $(path)/rootFiles/pp/gen_$(configFile)_job$(Process).root
+Log = /tmp/jeff/logs/pp_gen_$(configFile)_job$(Process).log
+Output = outputs/pp_gen_$(configFile)_job$(Process).out
+Error = errors/pp_gen_$(configFile)_job$(Process).err
+Queue 50
+
+
+
+#configFile=HardQCD_pTHat50
+#
+#Arguments = $(Process) 4000 2212 2212 5020 0 200000 aux/$(configFile).config $(path)/rootFiles/pp/gen_$(configFile)_job$(Process).root
+#Log = /tmp/jeff/logs/pp_gen_$(configFile)_job$(Process).log
+#Output = outputs/pp_gen_$(configFile)_job$(Process).out
+#Error = errors/pp_gen_$(configFile)_job$(Process).err
+#Queue 50
+#
+#Arguments = $(Process) 5000 1000822080 2212 5020 -0.465 200000 aux/$(configFile).config $(path)/rootFiles/pPb/gen_$(configFile)_job$(Process).root
+#Log = /tmp/jeff/logs/pPb_gen_$(configFile)_job$(Process).log
+#Output = outputs/pPb_gen_$(configFile)_job$(Process).out
+#Error = errors/pPb_gen_$(configFile)_job$(Process).err
+#Queue 50
+
+
+#configFile=HardQCD_pTHat50_withNPDF
+#
+#Arguments = $(Process) 6000 1000822080 2212 5020 -0.465 200000 aux/$(configFile).config $(path)/rootFiles/pPb/gen_$(configFile)_job$(Process).root
+#Log = /tmp/jeff/logs/pPb_gen_$(configFile)_job$(Process).log
+#Output = outputs/pPb_gen_$(configFile)_job$(Process).out
+#Error = errors/pPb_gen_$(configFile)_job$(Process).err
+#Queue 50
+#
+#Arguments = $(Process) 7000 2212 2212 5020 0 200000 aux/$(configFile).config $(path)/rootFiles/pp/gen_$(configFile)_job$(Process).root
+#Log = /tmp/jeff/logs/pp_gen_$(configFile)_job$(Process).log
+#Output = outputs/pp_gen_$(configFile)_job$(Process).out
+#Error = errors/pp_gen_$(configFile)_job$(Process).err
+#Queue 50
+
 
 
 #configFile=SoftQCD_ND
 #
-#Arguments = $(Process) 2000 2212 2212 5020 0 50000 aux/$(configFile).config rootFiles/pp/gen_$(configFile)_job$(Process).root
+#Arguments = $(Process) 2000 2212 2212 5020 0 50000 aux/$(configFile).config $(path)/rootFiles/pp/gen_$(configFile)_job$(Process).root
 #Log = /tmp/jeff/logs/pp_gen_$(configFile)_job$(Process).log
 #Output = outputs/pp_gen_$(configFile)_job$(Process).out
 #Error = errors/pp_gen_$(configFile)_job$(Process).err
 #Queue 20
 #
 #
-#Arguments = $(Process) 3000 1000822080 2212 5020 -0.465 50000 aux/$(configFile).config rootFiles/pPb/gen_$(configFile)_job$(Process).root
+#Arguments = $(Process) 3000 1000822080 2212 5020 -0.465 50000 aux/$(configFile).config $(path)/rootFiles/pPb/gen_$(configFile)_job$(Process).root
 #Log = /tmp/jeff/logs/pPb_gen_$(configFile)_job$(Process).log
 #Output = outputs/pPb_gen_$(configFile)_job$(Process).out
 #Error = errors/pPb_gen_$(configFile)_job$(Process).err
@@ -78,14 +121,14 @@ Queue 10
 #
 #configFile=SoftQCD_Inelastic
 #
-#Arguments = $(Process) 2000 2212 2212 5020 0 50000 aux/$(configFile).config rootFiles/pp/gen_$(configFile)_job$(Process).root
+#Arguments = $(Process) 2000 2212 2212 5020 0 50000 aux/$(configFile).config $(path)/rootFiles/pp/gen_$(configFile)_job$(Process).root
 #Log = /tmp/jeff/logs/pp_gen_$(configFile)_job$(Process).log
 #Output = outputs/pp_gen_$(configFile)_job$(Process).out
 #Error = errors/pp_gen_$(configFile)_job$(Process).err
 #Queue 20
 #
 #
-#Arguments = $(Process) 3000 1000822080 2212 5020 -0.465 50000 aux/$(configFile).config rootFiles/pPb/gen_$(configFile)_job$(Process).root
+#Arguments = $(Process) 3000 1000822080 2212 5020 -0.465 50000 aux/$(configFile).config $(path)/rootFiles/pPb/gen_$(configFile)_job$(Process).root
 #Log = /tmp/jeff/logs/pPb_gen_$(configFile)_job$(Process).log
 #Output = outputs/pPb_gen_$(configFile)_job$(Process).out
 #Error = errors/pPb_gen_$(configFile)_job$(Process).err

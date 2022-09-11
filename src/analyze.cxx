@@ -118,14 +118,14 @@ int main (int argc, char** argv) {
   if (ispPb)
     inTree->SetBranchAddress ("ncoll",         &ncoll);
 
-  const short nCentBins = (ispPb ? npPbNcollBins : 1);
+  const short nCentBins = (ispPb ? npPbNcollBins : 0);
 
   int** trk_pt_counts = Get2DArray <int> (3, nPthBins);
   int** trk_dphi_counts = Get2DArray <int> (nRedPthBins, nDPhiBins);
   int* jet_ptj_counts = Get1DArray <int> (nPtJBins);
 
   //int* n_evts = Get1DArray <int> (nCentBins); // number of events used at each centrallity
-  int* n_jets = Get1DArray <int> (nCentBins); // number of jets sampled at each centrallity
+  int* n_jets = Get1DArray <int> (nCentBins + 1); // number of jets sampled at each centrallity
 
   for (int iDPhi = 0; iDPhi < 3; iDPhi++)
     for (int iPth = 0; iPth < nPthBins; iPth++)
@@ -141,21 +141,21 @@ int main (int argc, char** argv) {
 
   TFile* outFile = new TFile (outFileName.c_str (), "recreate");
 
-  TH1D*** h_trk_pt_yield = Get2DArray <TH1D*> (3, nCentBins); // near-side, perpendicular, and away-side
-  TH2D*** h2_trk_pt_cov  = Get2DArray <TH2D*> (3, nCentBins);
+  TH1D*** h_trk_pt_yield = Get2DArray <TH1D*> (3, nCentBins + 1); // near-side, perpendicular, and away-side
+  TH2D*** h2_trk_pt_cov  = Get2DArray <TH2D*> (3, nCentBins + 1);
 
-  TH1D*** h_trk_dphi_yield = Get2DArray <TH1D*> (nRedPthBins, nCentBins); // many different pT bins
-  TH2D*** h2_trk_dphi_cov  = Get2DArray <TH2D*> (nRedPthBins, nCentBins);
+  TH1D*** h_trk_dphi_yield = Get2DArray <TH1D*> (nRedPthBins, nCentBins + 1); // many different pT bins
+  TH2D*** h2_trk_dphi_cov  = Get2DArray <TH2D*> (nRedPthBins, nCentBins + 1);
 
-  TH1D** h_jet_pt_yield = Get1DArray <TH1D*> (nCentBins);
-  TH2D** h2_jet_pt_cov  = Get1DArray <TH2D*> (nCentBins);
+  TH1D** h_jet_pt_yield = Get1DArray <TH1D*> (nCentBins + 1);
+  TH2D** h2_jet_pt_cov  = Get1DArray <TH2D*> (nCentBins + 1);
 
-  TH1D** h_jet_yield = Get1DArray <TH1D*> (nCentBins);
+  TH1D** h_jet_yield = Get1DArray <TH1D*> (nCentBins + 1);
 
 
-  for (int iCent = 0; iCent < nCentBins; iCent++) {
+  for (int iCent = 0; iCent < nCentBins + 1; iCent++) {
 
-    const std::string centStr = (nCentBins == 1 ? "" : Form ("cent%i_", iCent));
+    const std::string centStr = (nCentBins == 0 ? "" : Form ("cent%i_", iCent));
  
     for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
       const std::string dphiStr = (iDPhi == 0 ? "ns" : (iDPhi == 1 ? "perp" : "as"));
@@ -329,15 +329,36 @@ int main (int argc, char** argv) {
 
 
 
+  for (int iCent = 0; iCent < nCentBins; iCent++)
+    n_jets[nCentBins] += n_jets[iCent];
   std::cout << "n_jets = ";
-  for (int iCent = 0; iCent < nCentBins-1; iCent++)  std::cout << n_jets[iCent] << ", " << std::endl;
-  std::cout << n_jets[nCentBins-1] << std::endl;
+  for (int iCent = 0; iCent < nCentBins; iCent++)  std::cout << n_jets[iCent] << ", " << std::endl;
+  std::cout << n_jets[nCentBins] << std::endl;
+
+
+
+  // create centrality-integrated plot by summing other centralities
+  for (int iCent = 0; iCent < nCentBins; iCent++) {
+    for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
+      h_trk_pt_yield[iDPhi][nCentBins]->Add (h_trk_pt_yield[iDPhi][iCent]);
+      h2_trk_pt_cov[iDPhi][nCentBins]->Add (h2_trk_pt_cov[iDPhi][iCent]);
+    }
+    for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++) {
+      h_trk_dphi_yield[iRedPth][nCentBins]->Add (h_trk_dphi_yield[iRedPth][iCent]);
+      h2_trk_dphi_cov[iRedPth][nCentBins]->Add (h2_trk_dphi_cov[iRedPth][iCent]);
+    }
+    h_jet_pt_yield[nCentBins]->Add (h_jet_pt_yield[iCent]);
+    h2_jet_pt_cov[nCentBins]->Add (h2_jet_pt_cov[iCent]);
+    h_jet_yield[nCentBins]->Add (h_jet_yield[iCent]);
+  }
+
+
 
   {
     TH2D* h2 = nullptr;
     TH1D* h = nullptr;
 
-    for (int iCent = 0; iCent < nCentBins; iCent++) {
+    for (int iCent = 0; iCent < nCentBins + 1; iCent++) {
 
       const float n = (float) n_jets[iCent];
 
@@ -378,17 +399,17 @@ int main (int argc, char** argv) {
   // now save histograms to a rootfile
   outFile->cd ();
 
-  for (int iCent = 0; iCent < nCentBins; iCent++) {
+  for (int iCent = 0; iCent < nCentBins + 1; iCent++) {
     for (int iDPhi = 0; iDPhi < 3; iDPhi++) {
       h_trk_pt_yield[iDPhi][iCent]->Write ();
-      h2_trk_pt_cov[iDPhi][iCent]->Write ();
+      //h2_trk_pt_cov[iDPhi][iCent]->Write ();
     }
     for (int iRedPth = 0; iRedPth < nRedPthBins; iRedPth++) {
       h_trk_dphi_yield[iRedPth][iCent]->Write ();
-      h2_trk_dphi_cov[iRedPth][iCent]->Write ();
+      //h2_trk_dphi_cov[iRedPth][iCent]->Write ();
     }
     h_jet_pt_yield[iCent]->Write ();
-    h2_jet_pt_cov[iCent]->Write ();
+    //h2_jet_pt_cov[iCent]->Write ();
     h_jet_yield[iCent]->Write (); 
   }
   
